@@ -1,103 +1,116 @@
+'use client';
+
+import { Header } from "@/app/components/header";
+import { InrtoductionPart } from "@/app/components/home/introductionPart";
+import { ReservationPart } from "@/app/components/home/reservationPart";
+import { MenuPart } from "@/app/components/home/menuPart";
+import { PopularFood } from "@/app/components/home/popularFood";
 import Image from "next/image";
+import Link from "next/link";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    const { scrollYProgress } = useScroll();
+
+    const scale = useTransform(scrollYProgress, [0, 0.1], [1, 1.5]);
+    const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+
+    return (
+        <div className={`h-[8000px] mt-[100px] font-[family-name:var(--font-pacifico)]  caret-transparent`}>
+            <Header />
+            <div className={`w-full h-full flex flex-col items-center bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] `}>
+                <div className="w-full">
+                    <motion.div
+                        initial={{ opacity: 1 }}
+                        className="fixed w-full h-[calc(100vh-100px)]"
+                        style={{
+                            scale,
+                            opacity
+                        }}
+                    >
+                        <InrtoductionPart />
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0}}
+                        className="fixed left-50 top-150 origin-right"
+                        style={{
+                            opacity: useTransform(scrollYProgress, [0.05, 0.1, 0.2], [0, .5, 0]),
+                            scale: useTransform(scrollYProgress, [0.05, 0.1, 0.2], [1, 1.5, 2.5])
+                        }}
+                    >
+                        <Image src={'/home/cloud_5.png'} alt="cloud" width={250} height={115} />
+                    </motion.div>
+
+
+                    <motion.div
+                        initial={{ opacity: 0}}
+                        className="fixed left-150 top-40 origin-bottom"
+                        style={{
+                            opacity: useTransform(scrollYProgress, [0.1, 0.15, 0.25], [0, .5, 0]),
+                            scale: useTransform(scrollYProgress, [0.1, 0.15, 0.25], [1, 1.5, 2.5])
+                        }}
+                    >
+                        <Image className="scale-125" src={'/home/cloud_7.png'} alt="cloud" width={220} height={115} />
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0}}
+                        className="fixed right-90 top-160 origin-left"
+                        style={{
+                            opacity: useTransform(scrollYProgress, [0.08, 0.13, 0.24], [0, .5, 0]),
+                            scale: useTransform(scrollYProgress, [0.08, 0.13, 0.24], [1, 1.5, 2.5])
+                        }}
+                    >
+                        <Image src={'/home/cloud_3.png'} alt="cloud" width={240} height={115} />
+                    </motion.div>
+
+                    <motion.div
+                        className="fixed origin-top-left"
+                        style={{
+                            x: useTransform(scrollYProgress, [0.25, .3], [-500, 0] )
+                        }}
+                    >
+                        <Image src={'/home/corner.png'} alt="cloud" width={600} height={115} />
+                    </motion.div>
+
+                    <motion.div
+                        className="fixed right-0  -scale-x-100"
+                        style={{
+                            x: useTransform(scrollYProgress, [0.25, .3], [-500, 0] )
+                        }}
+                    >
+                        <Image src={'/home/corner.png'} alt="cloud" width={600} height={115} />
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        className="fixed w-full h-[calc(100vh-100px)] origin-center"
+                        style={{
+                            opacity: useTransform(scrollYProgress, [0.15, 0.2, 0.28, .3], [0, 0.8, 1, .8]),
+                            scale: useTransform(scrollYProgress, [0.05, 0.2, 0.3], [0, 0.8, 1]),
+                            y: useTransform(scrollYProgress, [0.35, .45], [0, -1000]),
+                        }}
+                    >
+                        <ReservationPart />
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 1 }}
+                        className="fixed w-full h-[calc(100vh-100px)]"
+                        style={{
+                            opacity: useTransform(scrollYProgress, [0.4, .43], [0, 1]),
+                            scale: useTransform(scrollYProgress, [0.4, .43], [0.8, 1]),
+                            y: useTransform(scrollYProgress, [0.4, .43], [800, 0]),
+                        }}
+                    >
+                        <MenuPart />
+                    </motion.div>
+
+
+                </div>
+            </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
 }

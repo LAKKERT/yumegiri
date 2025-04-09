@@ -1,0 +1,101 @@
+'use client';
+
+import { useForm } from "react-hook-form";
+import { useState, useEffect } from "react";
+import * as Yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { div } from "motion/react-client";
+
+const validationForm = Yup.object().shape({
+    name: Yup.string().min(3, 'Название должно содержать минимум 3 символа').required('Поле обязательно для заполнения'),
+})
+
+interface formInterface {
+    name: string;
+}
+
+interface categoriesInterface {
+    id: number;
+    name: string;
+}
+
+interface reciveData {
+    categories: categoriesInterface[]
+}
+
+export function MenuList(categoriesids: reciveData) {
+    
+    const allCategories = categoriesids.categories
+
+    // const [categories, setCategories] = useState<formInterface[] | null>(null);
+
+    const { register, handleSubmit, formState: { errors } } = useForm<formInterface>({
+        resolver: yupResolver(validationForm)
+    });
+
+    // useEffect(() => {
+    //     const getCategories = async () => {
+    //         try {
+    //             const response = await fetch(`/api/menu/getCategoriesAPI`, {
+    //                 method: "GET",
+    //                 headers: {
+    //                     'Content-Type' : 'application/json'
+    //                 }
+    //             })
+
+    //             const result = await response.json()
+
+    //             if (response.ok) {
+    //                 setCategories(result.result);
+    //             }else {
+    //                 console.log("DataBase error");
+    //             }
+
+    //         }catch (error) {
+    //             console.log(error);
+    //         }
+    //     }
+
+    //     getCategories();
+    // }, [])
+
+    const onsubmit = async (data: formInterface) => {
+        try {
+            const response = await fetch('/api/menu/addCategoryAPI', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+
+            if (response.ok) {
+                window.location.reload()
+            } else {
+                console.error('DataBase error occured')
+            }
+
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    return (
+        <div className="h-[500px] min-w-[300px] hidden md:flex flex-col items-center p-3 text-black bg-white rounded-2xl shadow-xl">
+            <h2>МЕНЮ</h2>
+
+            <div>
+                { allCategories?.map((category, category_id) => (
+                    <div className="text-base" key={category_id}>
+                        <a href={`#${category.id}`}>{category.name}</a>
+                    </div>
+                ))}
+            </div>
+
+            <form onSubmit={handleSubmit(onsubmit)} className="flex flex-col">
+                <input {...register('name')} className="text-center w-full border-b-2 border-black outline-0 caret-black" type="text" />
+                <button type="submit">ДОБАВИТЬ</button>
+            </form>
+        </div>
+    )
+}
