@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { useState, useEffect } from "react";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { div } from "motion/react-client";
 
 const validationForm = Yup.object().shape({
     name: Yup.string().min(3, 'Название должно содержать минимум 3 символа').required('Поле обязательно для заполнения'),
@@ -27,37 +26,9 @@ export function MenuList(categoriesids: reciveData) {
     
     const allCategories = categoriesids.categories
 
-    // const [categories, setCategories] = useState<formInterface[] | null>(null);
-
     const { register, handleSubmit, formState: { errors } } = useForm<formInterface>({
         resolver: yupResolver(validationForm)
     });
-
-    // useEffect(() => {
-    //     const getCategories = async () => {
-    //         try {
-    //             const response = await fetch(`/api/menu/getCategoriesAPI`, {
-    //                 method: "GET",
-    //                 headers: {
-    //                     'Content-Type' : 'application/json'
-    //                 }
-    //             })
-
-    //             const result = await response.json()
-
-    //             if (response.ok) {
-    //                 setCategories(result.result);
-    //             }else {
-    //                 console.log("DataBase error");
-    //             }
-
-    //         }catch (error) {
-    //             console.log(error);
-    //         }
-    //     }
-
-    //     getCategories();
-    // }, [])
 
     const onsubmit = async (data: formInterface) => {
         try {
