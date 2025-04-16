@@ -5,17 +5,25 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { saveRestaurantFiles } from "@/helpers/saveImage";
+import { object } from "yup";
 
 
-interface placesInterface {
+interface seatsInterface {
     uuid: string;
     name: string;
     description: string;
     numberOfSeats: number;
+    image: string;
 }
 
-interface FormValues {
-    seats: placesInterface[];
+interface placesInterface {
+    restaurant_name: string;
+    address: string;
+    phone_number: string;
+    mockUP: string;
+    description: string;
+    seats: seatsInterface[];
 }
 
 interface coordinatesInterface {
@@ -24,17 +32,31 @@ interface coordinatesInterface {
     y: number;
 }
 
+interface restaurantInterface {
+    restaurant_name: string;
+    address: string;
+    phone_number: string;
+    mockUP: string;
+}
 export default function AddMockUP() {
 
     const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>({});
     const [menuPosition, setMenuPosition] = useState<{ [key: string]: number }>({});
     const [coordinates, setCoordinates] = useState<coordinatesInterface[]>([]);
+    const [mockUP, setMockUP] = useState<File>();
+    const [seatImage, setSeatImage] = useState<File[]>([]);
 
-    const { control, register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+    const { control, register, handleSubmit, formState: { errors } } = useForm<placesInterface>({
+        defaultValues: {
+            restaurant_name: '',
+            address: '',
+            phone_number: '',
+            mockUP: '',
+            seats: [],
+        },
+    });
 
-    })
-
-    const { fields, append, remove } = useFieldArray<FormValues>({
+    const { fields, append, remove } = useFieldArray({
         control,
         name: 'seats',
     })
@@ -47,6 +69,7 @@ export default function AddMockUP() {
             uuid: idv4,
             name: '',
             description: '',
+            image: '',
             numberOfSeats: 1,
         });
 
@@ -59,36 +82,103 @@ export default function AddMockUP() {
         })
     };
 
+    const getFileProperties = (file: File | File[]) => {
+        if (Array.isArray(file)) {
+            const fileProperties: string[] = [];
+            file.map((file) => {
+                const fullName = file.name;
+                const newNameForImage = `/place design/${Date.now()}_${fullName}`
+                fileProperties.push(newNameForImage)
+            })
+            return fileProperties;
+        } else {
+            const fullName = file.name;
+            const newNameForMockUP = `/restaurant mockup/${Date.now()}_${fullName}`;
+            return newNameForMockUP;
+        }
+    }
+
+    const processData = (file: File | File[]): Promise<string | string[]> => {
+        if (Array.isArray(file)) {
+            return Promise.all(
+                file.map((singleFile) =>
+                    new Promise((resolve, reject) => {
+                        if (!singleFile) resolve(null);
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(singleFile);
+                    })
+                )
+            ) as Promise<string[]>;
+        } else {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = () => reject(new Error("Failed to read file"));
+                reader.readAsDataURL(file);
+            });
+        }
+    };
+
     const onSubmit = async (data) => {
+        console.log('data', data)
         try {
+
+            if (!mockUP || !seatImage) {
+                console.log('no files');
+                return
+            }
+
+            const mockupProperty = getFileProperties(mockUP);
+            const imagesProperty = getFileProperties(seatImage);
+
+            const mockUpData = await processData(mockUP);
+            const imagesData = await processData(seatImage);
+
+            saveRestaurantFiles(mockUpData, mockupProperty);
+            saveRestaurantFiles(imagesData, imagesProperty);
+
+            console.log(imagesProperty, imagesData)
+
             const payload = {
                 ...data,
                 coordinates: [...coordinates]
             }
-            
+
             const transformedPayload = {
-                seats: payload.seats.map((seat) => {
-                    const coordinates = payload.coordinates.find(coord => coord.uuid === seat.uuid)
-                    
+                restaurantData: {
+                    restaurant_name: data.restaurant_name,
+                    description: data.description,
+                    address: data.address,
+                    phone_number: data.phone_number,
+                    mockUP: mockupProperty,
+                },
+                seats: data.seats.map((seat, index) => {
+                    const coordinates = payload.coordinates.find(coord => coord.uuid === seat.uuid);
                     if (coordinates) {
                         return {
                             ...seat,
+                            image: imagesProperty[index],
                             x: coordinates.x,
                             y: coordinates.y
-                        }
+                        };
                     }
-                    return seat
+                    return seat;
                 })
-            }
+            };
 
-            const response = await fetch(`/api/menu/addRestoranMockUp`, {
+            console.log(transformedPayload)
+
+
+            const response = await fetch(`/api/restaurant/addRestaurantMockUp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(transformedPayload)
             });
-        }catch (error) {
+        } catch (error) {
             console.error(error);
         }
     }
@@ -139,6 +229,20 @@ export default function AddMockUP() {
                 <Header />
                 <button onClick={AddSeat}>Add seat</button>
                 <form onSubmit={handleSubmit(onSubmit)}>
+
+                    <div>
+                        <input {...register('restaurant_name')} className="text-white" type="text" />
+                        <input {...register('address')} className="text-white" type="text" />
+                        <input {...register('phone_number')} className="text-white" type="text" />
+                        <input onChange={(e) => {
+                            const files = e.target.files;
+                            if (files && files.length > 0) {
+                                setMockUP(files[0]);
+                            }
+                        }} className="text-white" type="file" />
+                        <input {...register('description')} className="text-white" type="text" />
+                    </div>
+
                     <div className=" h-full w-full flex flex-col items-center bg-[#e4c3a2] px-2">
                         <div ref={constraintsRef}
                             className="relative h-[1000px] w-[1000px] my-50 border-2 border-red-300"
@@ -274,7 +378,7 @@ export default function AddMockUP() {
                                                     className="text-black text-center"
                                                     {...register(`seats.${fieldIndex}.name`)}
                                                     placeholder={`New seat ${fieldIndex + 1}`}
-                                                    
+
                                                 />
 
                                                 <textarea
@@ -290,6 +394,26 @@ export default function AddMockUP() {
                                                     type="number"
                                                     className="text-black"
                                                 />
+
+                                                <input type="file" className="text-black" onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        setSeatImage(prev => [...prev, file]);
+                                                    }
+                                                }} />
+
+                                                {seatImage && (
+                                                    <div className="relative w-full h-28">
+                                                        {Array.isArray(seatImage) && seatImage[fieldIndex] && (
+                                                            <Image
+                                                                src={URL.createObjectURL(seatImage[fieldIndex])}
+                                                                layout="fill"
+                                                                objectFit="cover"
+                                                                alt="design"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                )}
                                             </motion.div>
                                         </motion.div>
 

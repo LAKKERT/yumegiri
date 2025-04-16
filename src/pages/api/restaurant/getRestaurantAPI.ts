@@ -10,8 +10,8 @@ export default async function getAllRestorans(req: NextApiRequest, res: NextApiR
             const conn = await Connect();
 
             try {
-                const result = await conn.query(`SELECT * FROM places WHERE restoran_id = $1`, [
-                    2
+                const result = await conn.query(`SELECT * FROM places WHERE restaurant_id = $1`, [
+                    14
                 ])
 
                 return res.status(200).json({ data: result.rows })
