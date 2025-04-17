@@ -5,17 +5,18 @@ export default async function addReservation(req: NextApiRequest, res: NextApiRe
    if (req.method === "POST") {
         try {
 
-            const { name, booked_date, number_of_guests, phone_number, place_Id } = req.body;
+            const { name, booked_date, number_of_guests, phone_number, place_Id, restaurant_id } = req.body;
 
             const conn = await Connect();
 
             try {
-                await conn.query(`INSERT INTO guests (name, booked_date, number_of_guests, phone_number, place_Id) VALUES ($1, $2, $3, $4, $5)`, [
+                await conn.query(`INSERT INTO guests (name, booked_date, number_of_guests, phone_number, place_Id, restaurant_id) VALUES ($1, $2, $3, $4, $5, $6)`, [
                     name,
                     booked_date,
                     number_of_guests,
                     phone_number,
-                    place_Id
+                    place_Id,
+                    restaurant_id
                 ]);
 
                 return res.status(200).json({ message: 'Столик забронирован успешно' });

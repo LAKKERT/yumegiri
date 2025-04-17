@@ -6,7 +6,6 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { saveRestaurantFiles } from "@/helpers/saveImage";
-import { object } from "yup";
 
 
 interface seatsInterface {
@@ -22,6 +21,8 @@ interface placesInterface {
     address: string;
     phone_number: string;
     mockUP: string;
+    mockup_height: number;
+    mockup_width: number;
     description: string;
     seats: seatsInterface[];
 }
@@ -30,6 +31,8 @@ interface coordinatesInterface {
     uuid: string;
     x: number;
     y: number;
+    xPer: number;
+    yPer: number;
 }
 
 interface restaurantInterface {
@@ -41,10 +44,14 @@ interface restaurantInterface {
 export default function AddMockUP() {
 
     const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>({});
+    const [selectedMockup, setSelectedMockup] = useState<File>();
     const [menuPosition, setMenuPosition] = useState<{ [key: string]: number }>({});
     const [coordinates, setCoordinates] = useState<coordinatesInterface[]>([]);
     const [mockUP, setMockUP] = useState<File>();
+    const [mockupSize, setMockupSize] = useState<{ width: number, height: number }>();
     const [seatImage, setSeatImage] = useState<File[]>([]);
+
+    const [imageSize, setImageSize] = useState<{ width: number, heigth: number }>();
 
     const { control, register, handleSubmit, formState: { errors } } = useForm<placesInterface>({
         defaultValues: {
@@ -76,8 +83,8 @@ export default function AddMockUP() {
         setCoordinates(prev => {
             return [...prev, {
                 uuid: idv4,
-                x: 0,
-                y: 0
+                x: 500,
+                y: 500
             }]
         })
     };
@@ -153,6 +160,8 @@ export default function AddMockUP() {
                     address: data.address,
                     phone_number: data.phone_number,
                     mockUP: mockupProperty,
+                    mockup_height: mockupSize?.height,
+                    mockup_width: 1110,
                 },
                 seats: data.seats.map((seat, index) => {
                     const coordinates = payload.coordinates.find(coord => coord.uuid === seat.uuid);
@@ -160,8 +169,8 @@ export default function AddMockUP() {
                         return {
                             ...seat,
                             image: imagesProperty[index],
-                            x: coordinates.x,
-                            y: coordinates.y
+                            x: coordinates.xPer,
+                            y: coordinates.yPer
                         };
                     }
                     return seat;
@@ -224,8 +233,8 @@ export default function AddMockUP() {
     }
 
     return (
-        <div>
-            <div className=" mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
+        <div className="">
+            <div className="min-h-[calc(100vh-100px)] h-full bg-[#e4c3a2] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
                 <Header />
                 <button onClick={AddSeat}>Add seat</button>
                 <form onSubmit={handleSubmit(onSubmit)}>
@@ -234,25 +243,72 @@ export default function AddMockUP() {
                         <input {...register('restaurant_name')} className="text-white" type="text" />
                         <input {...register('address')} className="text-white" type="text" />
                         <input {...register('phone_number')} className="text-white" type="text" />
-                        <input onChange={(e) => {
-                            const files = e.target.files;
-                            if (files && files.length > 0) {
-                                setMockUP(files[0]);
-                            }
-                        }} className="text-white" type="file" />
+                        <input
+                            onChange={async (e) => {
+                                const files = e.target.files;
+                                if (files && files.length > 0) {
+                                    try {
+                                        const imageData = await new Promise<string>((resolve, reject) => {
+                                            const reader = new FileReader();
+                                            reader.onload = () => resolve(reader.result as string);
+                                            reader.onerror = (error) => reject(error);
+                                            reader.readAsDataURL(files[0]);
+                                        });
+
+                                        const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+                                            const img = document.createElement('img');
+                                            img.onload = () => {
+                                                resolve({
+                                                    width: img.naturalWidth,
+                                                    height: Math.round(Math.min(img.naturalHeight * (1110 / img.naturalWidth), 1200))
+                                                });
+                                            };
+                                            img.src = imageData;
+                                        });
+
+                                        console.log('Размеры:', dimensions.width, 'x', dimensions.height);
+                                        setMockupSize({...dimensions})
+                                        setMockUP(files[0]);
+
+                                    } catch (error) {
+                                        console.error('Ошибка загрузки:', error);
+                                    }
+                                }
+                            }}
+                            className="text-white"
+                            type="file"
+                            accept="image/*"
+                        />
                         <input {...register('description')} className="text-white" type="text" />
                     </div>
 
-                    <div className=" h-full w-full flex flex-col items-center bg-[#e4c3a2] px-2">
-                        <div ref={constraintsRef}
-                            className="relative h-[1000px] w-[1000px] my-50 border-2 border-red-300"
+                    <div className=" h-full w-full flex flex-col items-center px-2">
+                        <motion.div
+                            ref={constraintsRef}
+                            className={`relative mx-auto max-w-[1110px] bg-gray-100`}
+                            style={{
+                                width: '100%',
+                                height: mockupSize?.height
+                            }}
                         >
-                            <Image
-                                src={'/restaurant mockup/mockup.png'}
-                                fill
-                                alt="mockup"
-                                className="user-none"
-                            />
+                            {mockUP ? (
+                                <Image
+                                    src={URL.createObjectURL(mockUP)}
+                                    // width={920} 
+                                    // height={1110}
+                                    alt="mockup"
+                                    fill
+                                    className="h-auto w-full object-contain"
+                                    style={{
+                                        // objectFit: 'contain',
+                                        // position: 'absolute',
+                                        // maxWidth: '100%',
+                                        // height: 'auto'
+                                    }}
+                                />
+                            ) : (
+                                null
+                            )}
 
                             {/* {fields ? (
                                 <AnimatePresence 
@@ -285,6 +341,9 @@ export default function AddMockUP() {
                                                 let relativeX = (info.point.x - container.left) - scrollX;
                                                 let relativeY = (info.point.y - container.top) - scrollY;
 
+                                                const relativeXPercent = Math.max(0, Math.min(100, (relativeX / container.width) * 100));
+                                                const relativeYPercent = Math.max(0, Math.min(100, (relativeY / container.height) * 100));
+
                                                 const minX = (container.left + scrollX);
                                                 const maxX = (container.right + scrollX);
                                                 const minY = (container.top + scrollY);
@@ -295,22 +354,26 @@ export default function AddMockUP() {
                                                 let absoluteY = info.point.y;
 
                                                 if (info.point.x < minX || info.point.x > maxX) {
-                                                    absoluteX = Math.max(minX, Math.min(maxX, absoluteX))
-                                                    relativeX = (absoluteX - container.left) - scrollX
+                                                    absoluteX = Math.max(minX, Math.min(maxX, absoluteX));
+                                                    relativeX = (absoluteX - container.left) - scrollX;
                                                 }
-
 
                                                 if (info.point.y < minY || info.point.y > maxY) {
-                                                    absoluteY = Math.max(minY, Math.min(maxY, absoluteY))
-                                                    relativeY = (absoluteY - container.top) - scrollY
+                                                    absoluteY = Math.max(minY, Math.min(maxY, absoluteY));
+                                                    relativeY = (absoluteY - container.top) - scrollY;
                                                 }
+
+                                                console.log('relativePX', relativeX, relativeY)
+                                                console.log('percent', relativeXPercent, relativeYPercent)
 
                                                 setCoordinates(prev => {
                                                     const newArray = [...prev]
                                                     newArray[fieldIndex] = {
                                                         ...prev[fieldIndex],
                                                         x: Math.round(relativeX),
-                                                        y: Math.round(relativeY)
+                                                        y: Math.round(relativeY),
+                                                        xPer: Math.round(relativeXPercent),
+                                                        yPer: Math.round(relativeYPercent),
                                                     }
                                                     return newArray;
                                                 })
@@ -354,8 +417,8 @@ export default function AddMockUP() {
                                             }}
                                             className={`overflow-hidden absolute w-[300px] h-[400px] bg-white rounded-xl ${visibleMenu[field.uuid] ? 'block z-40' : 'hidden z-30'}`}
                                             style={{
-                                                x: coordinates[fieldIndex].x,
-                                                y: coordinates[fieldIndex].y,
+                                                left: coordinates[fieldIndex].x,
+                                                top: coordinates[fieldIndex].y,
                                             }}
                                         >
                                             <motion.div
@@ -366,8 +429,8 @@ export default function AddMockUP() {
                                                 }}
                                                 className={`flex justify-end gap-4 px-2 h-[25px] bg-orange-500`}
                                             >
-                                                <button className="cursor-pointer" onClick={() => handleDeleteSeat(field.uuid)}>delete</button>
-                                                <button className="cursor-pointer" onClick={() => handleCloseMenu(field.uuid)}>close</button>
+                                                <button className="cursor-pointer" type="button" onClick={() => handleDeleteSeat(field.uuid)}>delete</button>
+                                                <button className="cursor-pointer" type="button" onClick={() => handleCloseMenu(field.uuid)}>close</button>
                                             </motion.div>
 
                                             <motion.div
@@ -424,7 +487,7 @@ export default function AddMockUP() {
                             ) : (
                                 null
                             )} */}
-                        </div>
+                        </motion.div>
                     </div>
 
                     <button type="submit" className="cursor-pointer">SUBMIT</button>

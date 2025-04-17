@@ -1,6 +1,7 @@
 'use server';
 
 import Connect from "@/db/dbConfig";
+import { param } from "motion/react-client";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function addRestaurantMockUp(req: NextApiRequest, res: NextApiResponse) {
@@ -8,16 +9,18 @@ export default async function addRestaurantMockUp(req: NextApiRequest, res: Next
         try {
 
             const seatsData = req.body.seats
-            const { restaurant_name, description, address, phone_number, mockUP } = req.body.restaurantData;
+            const { restaurant_name, description, address, phone_number, mockUP, mockup_height, mockup_width } = req.body.restaurantData;
 
             const conn = await Connect();
             try {
-                const createRestaurant = await conn.query(`INSERT INTO restaurant (name, description, address, phone_number, mockup) VALUES ($1, $2, $3, $4, $5) RETURNING id`, [
+                const createRestaurant = await conn.query(`INSERT INTO restaurant (name, description, address, phone_number, mockup, mockup_height, mockup_width) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`, [
                     restaurant_name,
                     description,
                     address,
                     phone_number,
-                    mockUP
+                    mockUP,
+                    mockup_height,
+                    mockup_width
                 ]);
 
                 const restaurantId = createRestaurant.rows[0].id;
