@@ -4,10 +4,7 @@ import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 
 export function ReservationPart() {
-
     const { scrollYProgress } = useScroll();
-
-
 
     const pointerEvents = useTransform(scrollYProgress, (progress) => 
         progress >= .25 ? "auto" : "none"

@@ -1,7 +1,6 @@
 'use server';
 
 import Connect from "@/db/dbConfig";
-import { param } from "motion/react-client";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function addRestaurantMockUp(req: NextApiRequest, res: NextApiResponse) {

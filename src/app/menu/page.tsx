@@ -2,36 +2,21 @@
 
 import { Header } from "@/app/components/header";
 import { MenuList } from "@/app/components/menu/menuList";
+import { DishDetail } from "../components/menu/dishDetail";
+import { EditDish } from "../components/menu/editDish";
 import { useEffect, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
-interface dishesInterface {
-    id: number;
-    name: string;
-    description: string;
-    weight: number;
-    price: number;
-    kcal: number;
-    proteins: number;
-    carbohydrates: number;
-    fats: number;
-    category_id: number;
-    category: string;
-    image: string;
-    category_name: string;
-}
-
-interface categoriesInterface {
-    id: number;
-    name: string;
-}
-
 export default function Menu() {
-    const [dishesData, setDishesData] = useState<dishesInterface[]>([]);
-    const [categories, setCategories] = useState<categoriesInterface[]>([]);
-    const [filteredCategories, setFilteredCategories] = useState<categoriesInterface[]>([]);
+    const [dishesData, setDishesData] = useState<DishesInterface[]>([]);
+    const [categories, setCategories] = useState<CategoriesInterface[]>([]);
+    const [filteredCategories, setFilteredCategories] = useState<CategoriesInterface[]>([]);
+    const [editMode, setEditMode] = useState(false);
+
+    const [showDetail, setShowDetail] = useState(false);
+    const [showDetailIndex, setShowDetailIndex] = useState<number | null>(null);
 
     useEffect(() => {
         const getDishes = async () => {
@@ -61,16 +46,52 @@ export default function Menu() {
     }, [])
 
     useEffect(() => {
-        const cats = categories.filter(category => 
+        const cats = categories.filter(category =>
             dishesData.some(dish => dish.category_id === category.id)
         );
         setFilteredCategories(cats);
     }, [categories, dishesData]);
 
+    console.log(categories)
+
     return (
         <div className=" mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
             <Header />
-            <div className="min-h-[calc(100vh-100px)] w-full flex justify-center bg-[#e4c3a2] px-2">
+
+            {showDetailIndex !== null ? (
+                <div className={`fixed min-h-[calc(100vh-100px)] w-full z-50 ${showDetail ? 'bg-[#6d6c6c67] block' : 'bg-transparent hidden'}`}
+                    // onClick={() => setShowDetail(false)}
+                >
+                    <motion.div
+                        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[920px] w-full max-h-[450px] h-full z-40 ${showDetail ? 'block' : 'hidden'}`}
+                    >
+                        <div className={`w-full flex flex-row justify-end gap-4 z-50`}>
+                            <button 
+                                className="uppercase cursor-pointer"
+                                onClick={() => setEditMode(true)}
+                            >
+                                Редактировать
+                            </button>
+
+                            <button 
+                                className="uppercase cursor-pointer"
+                                onClick={() => setShowDetail(false)}
+                            >
+                                закрыть
+                            </button>
+                        </div>
+                        {!editMode ? (
+                            <DishDetail dishesData={dishesData[showDetailIndex]} />
+                        ) : (
+                            <EditDish dishesData={dishesData[showDetailIndex]} />
+                        )}
+                    </motion.div>
+                </div>
+            ) : (
+                null
+            )}
+
+            <div className={`min-h-[calc(100vh-100px)] w-full flex justify-center bg-[#e4c3a2] px-2 `}>
                 <div className="h-full max-w-7xl w-full flex gap-4 mt-4">
                     <div className="flex flex-col items-center gap-2">
                         <Link className={`text-black`} href="/menu/addDish" >
@@ -95,14 +116,22 @@ export default function Menu() {
                                 <div className="flex flex-row flex-wrap gap-4 lg:flex-col">
                                     {dishesData
                                         .filter(dish => dish.category_id === category.id)
-                                        .map((dish) => (
-                                            <div key={dish.id}>
+                                        .map((dish, dishIndex) => (
+                                            <div
+                                                key={dish.id}
+                                                className="cursor-pointer"
+                                                onClick={() => {
+                                                    setShowDetailIndex(dishIndex)
+                                                    setShowDetail(prev => !prev)
+                                                }}
+                                            >
+
                                                 <div className="w-[300px] lg:w-full h-auto lg:h-[250px] flex lg:flex-row flex-col bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
                                                     <div className="relative w-[300px] h-[300px] lg:h-full flex-shrink-0">
                                                         <Image
                                                             src={`http://localhost:3000/${dish.image}`}
-                                                            alt="Sushi"
-                                                            layout="fill"
+                                                            alt="Dish"
+                                                            fill
                                                             objectFit="cover"
                                                             quality={100}
                                                         />

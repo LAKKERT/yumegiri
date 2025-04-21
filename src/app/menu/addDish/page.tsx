@@ -20,30 +20,13 @@ const validationForm = Yup.object().shape({
     category: Yup.string().required('Выберите категорию')
 })
 
-interface formInterface {
-    name: string,
-    description: string,
-    weight: number,
-    price: number,
-    kcal: number,
-    proteins: number,
-    carbohydrates: number,
-    fats: number,
-    category: string,
-}
-
-interface categoriesInterface {
-    id: number,
-    name: string,
-}
-
 export default function AddDish() {
     const [selectedFile, setSelectedFile] = useState<File>();
-    const [categories, setCategories] = useState<categoriesInterface[] | null>(null);
+    const [categories, setCategories] = useState<CategoriesInterface[] | null>(null);
 
     const router = useRouter();
 
-    const { register, handleSubmit, formState: { errors } } = useForm<formInterface>({
+    const { register, handleSubmit, formState: { errors } } = useForm<AddDishInterface>({
         resolver: yupResolver(validationForm),
     })
 
@@ -73,7 +56,7 @@ export default function AddDish() {
         getCategories();
     }, [])
 
-    const onSubmit = async (data: formInterface) => {
+    const onSubmit = async (data: AddDishInterface) => {
         console.log(data)
 
         if (!selectedFile) {
@@ -166,7 +149,7 @@ export default function AddDish() {
                         <input className="w-3/4 text-center border-b-2 border-black outline-none focus:outline-none caret-black" {...register('name')} type="text" placeholder="НАЗВАНИЕ" />
                         <textarea {...register('description')} 
                             placeholder="ОПИСАНИЕ"
-                            className="w-3/4 h-full resize-none outline-2 outline-black rounded-xl p-2"
+                            className="w-3/4 h-full resize-none outline-2 outline-black rounded-xl p-2 caret-black"
                          />
 
                         <select {...register('category')}>

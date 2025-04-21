@@ -9,28 +9,28 @@ const validationForm = Yup.object().shape({
     name: Yup.string().min(3, 'Название должно содержать минимум 3 символа').required('Поле обязательно для заполнения'),
 })
 
-interface formInterface {
+interface FormInterface {
     name: string;
 }
 
-interface categoriesInterface {
+interface CategoriesInterface {
     id: number;
     name: string;
 }
 
-interface reciveData {
-    categories: categoriesInterface[]
+interface ReciveData {
+    categories: CategoriesInterface[]
 }
 
-export function MenuList(categoriesids: reciveData) {
+export function MenuList(categoriesids: ReciveData) {
     
     const allCategories = categoriesids.categories
 
-    const { register, handleSubmit, formState: { errors } } = useForm<formInterface>({
+    const { register, handleSubmit, formState: { errors } } = useForm<FormInterface>({
         resolver: yupResolver(validationForm)
     });
 
-    const onsubmit = async (data: formInterface) => {
+    const onsubmit = async (data: FormInterface) => {
         try {
             const response = await fetch('/api/menu/addCategoryAPI', {
                 method: 'POST',
