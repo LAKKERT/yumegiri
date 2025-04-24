@@ -14,6 +14,8 @@ export default function Menu() {
     const [categories, setCategories] = useState<CategoriesInterface[]>([]);
     const [filteredCategories, setFilteredCategories] = useState<CategoriesInterface[]>([]);
     const [editMode, setEditMode] = useState(false);
+    const [deleteMode, setDeleteMode] = useState(false);
+    const [deleteDishes, setDeleteDishes] = useState<number[]>([]);
 
     const [showDetail, setShowDetail] = useState(false);
     const [showDetailIndex, setShowDetailIndex] = useState<number | null>(null);
@@ -52,7 +54,26 @@ export default function Menu() {
         setFilteredCategories(cats);
     }, [categories, dishesData]);
 
-    console.log(categories)
+    const handleDeleteDishes = async (dishIds: (number[])) => {
+        try {
+            const response = await fetch(`/api/menu/deleteDishesAPI`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(dishIds)
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            }
+
+        } catch (error) {
+            console.log('Error deleting dishes: ', error);
+        }
+    }
+
+    console.log(deleteDishes)
 
     return (
         <div className=" mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
@@ -60,20 +81,20 @@ export default function Menu() {
 
             {showDetailIndex !== null ? (
                 <div className={`fixed min-h-[calc(100vh-100px)] w-full z-50 ${showDetail ? 'bg-[#6d6c6c67] block' : 'bg-transparent hidden'}`}
-                    // onClick={() => setShowDetail(false)}
+                // onClick={() => setShowDetail(false)}
                 >
                     <motion.div
                         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[920px] w-full max-h-[450px] h-full z-40 ${showDetail ? 'block' : 'hidden'}`}
                     >
                         <div className={`w-full flex flex-row justify-end gap-4 z-50`}>
-                            <button 
+                            <button
                                 className="uppercase cursor-pointer"
                                 onClick={() => setEditMode(true)}
                             >
                                 Редактировать
                             </button>
 
-                            <button 
+                            <button
                                 className="uppercase cursor-pointer"
                                 onClick={() => setShowDetail(false)}
                             >
@@ -107,26 +128,51 @@ export default function Menu() {
                     </div>
 
                     <div className="w-full">
+                        <div className="flex gap-4">
+                            <button type="button" className="cursor-pointer" onClick={() => setDeleteMode(prev => !prev)}>ВЫБРАТЬ БЛЮДА</button>
+
+                            {deleteDishes.length > 0 ? (
+                                <button type="button" className="cursor-pointer" onClick={() => handleDeleteDishes(deleteDishes)}>УДАЛИТЬ БЛЮДА</button>
+                            ) : (
+                                null
+                            )}
+                        </div>
+
                         {filteredCategories?.map((category) => (
                             <div id={`${category.id}`} key={category.id} className="mb-8 scroll-m-[120px]">
                                 <h3 className="text-2xl font-bold text-black mb-4">
                                     {category.name.toUpperCase()}
                                 </h3>
 
-                                <div className="flex flex-row flex-wrap gap-4 lg:flex-col">
+                                <div className="flex flex-row flex-wrap gap-4 lg:flex-col z-20">
                                     {dishesData
                                         .filter(dish => dish.category_id === category.id)
                                         .map((dish, dishIndex) => (
                                             <div
                                                 key={dish.id}
-                                                className="cursor-pointer"
-                                                onClick={() => {
-                                                    setShowDetailIndex(dishIndex)
-                                                    setShowDetail(prev => !prev)
-                                                }}
+                                                className="relative cursor-pointer"
                                             >
+                                                {/* <div className="absolute left-0 top-0 w-6 h-6 rounded-tl-2xl bg-[#c28585] z-40">
 
-                                                <div className="w-[300px] lg:w-full h-auto lg:h-[250px] flex lg:flex-row flex-col bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+                                                </div> */}
+
+                                                <div
+                                                    className={`w-[300px] lg:w-full h-auto lg:h-[250px] flex lg:flex-row flex-col bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${deleteDishes.includes(dish.id) ? 'scale-95 outline-2 outline-orange-500' : 'scale-100'}`}
+                                                    onClick={() => {
+                                                        if (!deleteMode) {
+                                                            setShowDetailIndex(dishIndex)
+                                                            setShowDetail(prev => !prev)
+                                                        } else {
+                                                            setDeleteDishes((prev) => {
+                                                                const newArray = prev.includes(dish.id)
+                                                                    ? prev.filter((item) => item !== dish.id)
+                                                                    : [...prev, dish.id]
+
+                                                                return newArray;
+                                                            })
+                                                        }
+                                                    }}
+                                                >
                                                     <div className="relative w-[300px] h-[300px] lg:h-full flex-shrink-0">
                                                         <Image
                                                             src={`http://localhost:3000/${dish.image}`}
