@@ -84,7 +84,7 @@ export default function Menu() {
                 // onClick={() => setShowDetail(false)}
                 >
                     <motion.div
-                        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[920px] w-full max-h-[450px] h-full z-40 ${showDetail ? 'block' : 'hidden'}`}
+                        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] lg:max-w-[920px] lg:w-full max-h-[450px] h-full z-40 ${showDetail ? 'block' : 'hidden'}`}
                     >
                         <div className={`w-full flex flex-row justify-end gap-4 z-50`}>
                             <button

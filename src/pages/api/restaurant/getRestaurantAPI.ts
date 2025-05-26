@@ -23,7 +23,7 @@ export default async function getAllRestorans(req: NextApiRequest, res: NextApiR
             }
 
         }catch (error) {
-            return res.status(500).json({ message: 'Server side error' })
+            return res.status(500).json({ message: `Server side error ${error}` })
         }
     }else {
         return res.status(405).json({ message: "Method not allowed" });

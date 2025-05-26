@@ -19,8 +19,8 @@ export function Header() {
                     ユ メギリ
                 </Link>
 
-                <Link href="#" className={`hidden lg:block py-2 px-4 transition-colors duration-300 border-2 rounded-xl border-transparent hover:border-white`}>
-                    ОСТАВИТЬ ОТЗЫВ
+                <Link href="/restaurants" className={`hidden lg:block py-2 px-4 transition-colors duration-300 border-2 rounded-xl border-transparent hover:border-white`}>
+                    РЕСТОРАНЫ
                 </Link>
 
                 <Link href="#" className={`hidden lg:block py-2 px-4 transition-colors duration-300 border-2 rounded-xl border-transparent hover:border-white`}>

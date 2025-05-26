@@ -2,105 +2,106 @@
 import { Header } from "@/app/components/header";
 import { v4 as uuidv4 } from 'uuid';
 import { useForm, useFieldArray } from "react-hook-form";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect, ChangeEvent } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { saveRestaurantFiles } from "@/helpers/saveImage";
 import { useRouter } from "next/navigation";
 import styles from '@/app/styles/reservatoin/variables.module.scss';
-
-interface SeatsInterface {
-    uuid: string;
-    name: string;
-    description: string;
-    numberOfSeats: number;
-    image: string;
-}
-
-interface PlacesInterface {
-    restaurant_name: string;
-    address: string;
-    phone_number: string;
-    mockUP: string;
-    mockup_height: number;
-    mockup_width: number;
-    description: string;
-    seats: SeatsInterface[];
-}
-
-interface CoordinatesInterface {
-    uuid: string;
-    x: number;
-    y: number;
-    xPer: number;
-    yPer: number;
-}
+import { Places } from "@/lib/interfaces/mockup";
+import { supabase } from "@/db/supabaseConfig";
 
 export default function AddMockUP() {
+    const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean } | undefined>(undefined);
+    const [mockUPUrl, setMockUPUrl] = useState<string | null>(null);
+    const [currentFloor, setCurrentFloor] = useState<number>(1);
 
-    const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>({});
-    const [coordinates, setCoordinates] = useState<CoordinatesInterface[]>([]);
-    const [mockUP, setMockUP] = useState<File>();
-    const [mockupSize, setMockupSize] = useState<{ width: number, height: number }>();
-    const [seatImage, setSeatImage] = useState<File[]>([]);
+    const [countOfFloors, setCountOfFloors] = useState<number>(1);
+
+    const seatsRefs = useRef<HTMLDivElement[]>([]);
 
     const router = useRouter();
 
-    const { control, register, handleSubmit, formState: { errors } } = useForm<PlacesInterface>({
+    const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<Places>({
         defaultValues: {
             restaurant_name: '',
             address: '',
             phone_number: '',
-            mockUP: '',
-            seats: [],
+            cover: null,
+            floors: [],
         },
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields, append, remove, update } = useFieldArray({
         control,
-        name: 'seats',
-    })
+        name: 'floors',
+    });
 
-    const constraintsRef = useRef<HTMLDivElement>(null);
+    const constraintsRef = useRef<HTMLDivElement | null>(null);
 
-    const AddSeat = () => {
+    const addFloor = () => {
+        setCountOfFloors(prev => prev + 1);
         const idv4 = uuidv4();
         append({
             uuid: idv4,
-            name: '',
-            description: '',
-            image: '',
-            numberOfSeats: 1,
+            mockUP: null,
+            mockup_height: 0,
+            mockup_width: 0,
+            seats: [
+                {
+                    uuid: uuidv4(),
+                    description: '',
+                    name: '',
+                    image: null,
+                    numberOfSeats: 1,
+                    x: 0,
+                    y: 0,
+                    xPer: 0,
+                    yPer: 0,
+                }
+            ]
         });
-
-        setCoordinates(prev => {
-            return [...prev, {
-                uuid: idv4,
-                x: 500,
-                y: 500,
-                xPer: 0,
-                yPer: 0,
-            }]
-        })
     };
 
-    const getFileProperties = (file: File | File[]) => {
-        if (Array.isArray(file)) {
-            const fileProperties: string[] = [];
-            file.map((file) => {
-                const fullName = file.name;
-                const newNameForImage = `/place design/${Date.now()}_${fullName}`
-                fileProperties.push(newNameForImage)
-            })
-            return fileProperties;
+    const addSeat = (currentFloor: number) => {
+        if (fields && currentFloor >= 0 && currentFloor < fields.length) {
+            const idv4 = uuidv4();
+            update(currentFloor, {
+                ...fields[currentFloor],
+                seats: [
+                    ...fields[currentFloor].seats,
+                    {
+                        uuid: idv4,
+                        name: '',
+                        description: '',
+                        numberOfSeats: 1,
+                        image: null,
+                        x: 0,
+                        y: 0,
+                        xPer: 0,
+                        yPer: 0,
+                    }
+                ]
+            });
         } else {
-            const fullName = file.name;
-            const newNameForMockUP = `/restaurant mockup/${Date.now()}_${fullName}`;
-            return newNameForMockUP;
+            console.warn('Invalid currentFloor or fields is empty');
         }
-    }
+    };
 
-    const processData = (file: File | File[]): Promise<string | string[]> => {
+    const getFileProperties = (files: File[] | File | null): string | string[] | null => {
+        if (Array.isArray(files)) {
+            return files.map(file => {
+                if (!file) return null;
+                return `/restaurant mockup/${Date.now()}_${file.name}`;
+            }).filter(name => name !== null) as string[];
+        } else if (files) {
+            return `/restaurant mockup/${Date.now()}_${files.name}`;
+        } else {
+            return null;
+        };
+    };
+
+    const processData = (file: File | File[] | null): Promise<string | string[] | null> => {
         if (Array.isArray(file)) {
             return Promise.all(
                 file.map((singleFile) =>
@@ -112,372 +113,482 @@ export default function AddMockUP() {
                         reader.readAsDataURL(singleFile);
                     })
                 )
-            ) as Promise<string[]>;
+            ) as Promise<string[] | null>;
         } else {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result as string);
-                reader.onerror = () => reject(new Error("Failed to read file"));
-                reader.readAsDataURL(file);
-            });
+            if (file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = () => reject(new Error("Failed to read file"));
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                return Promise.resolve(null);
+            }
         }
     };
 
-    const onSubmit = async (data: PlacesInterface) => {
+    const onSubmit = async (data: Places) => {
         try {
 
-            if (!mockUP || !seatImage) {
-                console.log('no files');
-                return
-            }
+            const mockupPropeties = data.floors.map(floor => getFileProperties(floor.mockUP));
+            const imagesProperty = data.floors.map(floor => floor.seats.map(seat => getFileProperties(seat.image)));
 
-            const mockupProperty = getFileProperties(mockUP);
-            const imagesProperty = getFileProperties(seatImage);
+            const coverProperties = getFileProperties(data.cover);
 
-            const mockUpData = await processData(mockUP);
-            const imagesData = await processData(seatImage);
+            const coverData = await processData(data.cover);
 
-            saveRestaurantFiles(mockUpData, mockupProperty);
+            const mockUpDataPromises = data.floors.map(floor => processData(floor.mockUP));
+            const mockUpData = await Promise.all(mockUpDataPromises);
+
+            const imagesDataPromises = data.floors.flatMap(floor => floor.seats.map(seat => processData(seat.image)));
+            const imagesData = await Promise.all(imagesDataPromises);
+
+            saveRestaurantFiles(mockUpData, mockupPropeties);
             saveRestaurantFiles(imagesData, imagesProperty);
-
-            console.log(imagesProperty, imagesData)
+            saveRestaurantFiles(coverData, coverProperties);
 
             const payload = {
                 ...data,
-                coordinates: [...coordinates]
-            }
-
-            const transformedPayload = {
-                restaurantData: {
-                    restaurant_name: data.restaurant_name,
-                    description: data.description,
-                    address: data.address,
-                    phone_number: data.phone_number,
-                    mockUP: mockupProperty,
-                    mockup_height: mockupSize?.height,
-                    mockup_width: 1110,
-                },
-                seats: data.seats.map((seat, index) => {
-                    const coordinates = payload.coordinates.find(coord => coord.uuid === seat.uuid);
-                    if (coordinates) {
-                        return {
-                            ...seat,
-                            image: imagesProperty[index],
-                            x: coordinates.xPer,
-                            y: coordinates.yPer
-                        };
-                    }
-                    return seat;
-                })
             };
 
-            const response = await fetch(`/api/restaurant/addRestaurantMockUp`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(transformedPayload)
-            });
+            if (process.env.NEXT_PUBLIC_ENV === 'production') {
+                const { data: restaurant_id, error } = await supabase
+                    .from('restaurant')
+                    .insert({
+                        name: data.restaurant_name,
+                        description: data.description,
+                        address: data.address,
+                        phone_number: data.phone_number,
+                        cover: coverProperties
+                    })
+                    .select('id')
+                    .single();
 
-            if (response.ok) {
-                router.push('/');
+                if (error) {
+                    console.error(error);
+                } else {
+                    for (let floorIdx = 0; floorIdx < data.floors.length; floorIdx++) {
+                        const { data: floor_id, error: floorError } = await supabase
+                            .from('floors')
+                            .insert({
+                                mockup: mockupPropeties[floorIdx],
+                                mockup_height: data.floors[floorIdx].mockup_height,
+                                mockup_width: data.floors[floorIdx].mockup_width,
+                                level: floorIdx,
+                                restaurant_id: restaurant_id.id,
+                            })
+                            .select('uuid')
+                            .single();
+                        if (floorError) console.error(floorError);
+                        else {
+                            for (let seatIdx = 0; seatIdx < data.floors[floorIdx].seats.length; seatIdx++) {
+                                const { error: placesError } = await supabase
+                                    .from('places')
+                                    .insert({
+                                        place_name: data.floors[floorIdx].seats[seatIdx].name,
+                                        description: data.floors[floorIdx].seats[seatIdx].description,
+                                        number_of_seats: data.floors[floorIdx].seats[seatIdx].numberOfSeats,
+                                        x: data.floors[floorIdx].seats[seatIdx].xPer,
+                                        y: data.floors[floorIdx].seats[seatIdx].yPer,
+                                        image: imagesProperty[floorIdx][seatIdx],
+                                        floor_id: floor_id.uuid,
+                                    });
+
+                                if (placesError) {
+                                    console.error(placesError);
+                                }
+                            }
+                        }
+                    }
+                }
             } else {
-                console.error('Error occured')
+                const response = await fetch(`/api/restaurant/addRestaurantMockUp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    router.push('/');
+                } else {
+                    console.error('Error occured');
+                }
             }
+
         } catch (error) {
             console.error(error);
         }
-    }
-
-    const handleDeleteSeat = (seatID: string) => {
-
-        remove(fields.findIndex(field => field.uuid === seatID));
-
-        setCoordinates(prev => {
-            return prev.filter((item) => item.uuid !== seatID)
-        })
-
-        setVisibleMenu((prev) => {
-            const newArray = { ...prev }
-            delete newArray[seatID];
-            return newArray
-        })
     };
 
-    const handleDragElement = (event, info, fieldIndex: number) => {
-        if (!constraintsRef.current) return;
-        const container = constraintsRef.current?.getBoundingClientRect();
+    const handleDeleteSeat = (seatID: string) => {
+        remove(fields.findIndex(field => field.uuid === seatID));
 
-        const scrollY = window.scrollY;
-        const scrollX = window.scrollX;
-
-        let relativeX = (info.point.x - container.left) - scrollX;
-        let relativeY = (info.point.y - container.top) - scrollY;
-
-        const relativeXPercent = Math.max(0, Math.min(100, (relativeX / container.width) * 100));
-        const relativeYPercent = Math.max(0, Math.min(100, (relativeY / container.height) * 100));
-
-        const minX = (container.left + scrollX);
-        const maxX = (container.right + scrollX);
-        const minY = (container.top + scrollY);
-        const maxY = (container.bottom + scrollY);
-
-
-        let absoluteX = info.point.x;
-        let absoluteY = info.point.y;
-
-        if (info.point.x < minX || info.point.x > maxX) {
-            absoluteX = Math.max(minX, Math.min(maxX, absoluteX));
-            relativeX = (absoluteX - container.left) - scrollX;
-        }
-
-        if (info.point.y < minY || info.point.y > maxY) {
-            absoluteY = Math.max(minY, Math.min(maxY, absoluteY));
-            relativeY = (absoluteY - container.top) - scrollY;
-        }
-
-        console.log('relativePX', relativeX, relativeY)
-        console.log('percent', relativeXPercent, relativeYPercent)
-
-        setCoordinates(prev => {
-            const newArray = [...prev]
-            newArray[fieldIndex] = {
-                ...prev[fieldIndex],
-                x: Math.round(relativeX),
-                y: Math.round(relativeY),
-                xPer: Math.round(relativeXPercent),
-                yPer: Math.round(relativeYPercent),
-            }
-            return newArray;
-        })
-    }
-
-    const mockUpHandleClick = () => {
         setVisibleMenu((prev) => {
-            const newArray = [...prev];
-            newArray.map((item, index) => {
-                newArray[index] = {
-                    uuid: newArray[index].uuid,
-                    status: false
-                }
-            });
+            const newArray = { ...prev };
+            delete newArray[seatID];
             return newArray;
-        })
-    }
+        });
+    };
+
+    const handleDragElement = useCallback((info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }, currentFloor: number, fieldIndex: number, index: string) => {
+        if (!constraintsRef.current) return;
+        const container = constraintsRef.current.getBoundingClientRect();
+
+        if (container) {
+            const scrollY = window.scrollY;
+            const scrollX = window.scrollX;
+
+            const relativeX = (info.point.x - container.left) - scrollX;
+            const relativeY = (info.point.y - container.top) - scrollY;
+
+            const relativeXPercent = Math.max(0, Math.min(100, (relativeX / container.width) * 100));
+            const relativeYPercent = Math.max(0, Math.min(100, (relativeY / container.height) * 100));
+
+            update(currentFloor, {
+                ...fields[currentFloor],
+                seats: [
+                    ...fields[currentFloor].seats.slice(0, fieldIndex),
+                    {
+                        ...fields[currentFloor].seats[fieldIndex],
+                        x: Math.round(relativeX),
+                        y: Math.round(relativeY),
+                        xPer: Math.round(relativeXPercent * 10) / 10,
+                        yPer: Math.round(relativeYPercent * 10) / 10,
+                    },
+                    ...fields[currentFloor].seats.slice(fieldIndex + 1)
+                ]
+            });
+
+            setVisibleMenu((prev) => {
+                if (seatsRefs.current[fieldIndex]) {
+                    const container = constraintsRef.current?.getBoundingClientRect();
+                    const space = seatsRefs.current[fieldIndex].getBoundingClientRect();
+                    const viewPortY = info.point.y - scrollY;
+
+                    if (container && space) {
+                        if (info.point.x + space.width > (container.left + container.right) && (viewPortY + 400) > window.innerHeight) {
+                            seatsRefs.current[fieldIndex].style.transform = 'translate(-100%, -100%)';
+                            return {
+                                ...prev,
+                                [index]: true
+                            }
+                        }
+
+                        if (viewPortY + 400 > window.innerHeight) {
+                            seatsRefs.current[fieldIndex].style.transform = 'translateY(-100%)';
+                            return {
+                                ...prev,
+                                [index]: true
+                            }
+                        } else {
+                            seatsRefs.current[fieldIndex].style.transform = 'translateY(0)';
+                            return {
+                                ...prev,
+                                [index]: true
+                            }
+                        }
+                    }
+                }
+            })
+        }
+    }, [constraintsRef, fields]);
 
     const handleCloseMenu = (itemUUID: string) => {
-        setVisibleMenu(prev => ({
-            ...prev,
-            [itemUUID]: false
-        }));
+        setVisibleMenu(prev => ({ ...prev, [itemUUID]: false }));
+    };
+
+    useEffect(() => {
+        const changeFloor = async () => {
+            if (fields[currentFloor] && fields[currentFloor].mockUP !== null) {
+                try {
+                    const imageData = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = (error) => reject(error);
+                        reader.readAsDataURL(fields[currentFloor].mockUP as File);
+                    });
+
+                    setMockUPUrl(imageData);
+                } catch (error) {
+                    console.error('Ошибка загрузки изображения:', error);
+                }
+            } else {
+                setMockUPUrl(null);
+            }
+        };
+
+        changeFloor();
+    }, [currentFloor, fields]);
+
+    const onClickHandler = (index: string, placeIndex: number) => {
+        setVisibleMenu((prev) => {
+            if (typeof prev === 'undefined') return
+            if (prev[index] === true) {
+                return {
+                    ...prev,
+                    [index]: !prev[index]
+                }
+            } else {
+                if (seatsRefs.current[placeIndex]) {
+                    const container = constraintsRef.current?.getBoundingClientRect();
+                    const space = seatsRefs.current[placeIndex].getBoundingClientRect();
+
+                    if (container && space) {
+                        if (space.right + space.width > (container.left + container.right) && (space.top + 400) > window.innerHeight) {
+                            seatsRefs.current[placeIndex].style.transform = 'translate(-100%, -100%)';
+                            return {
+                                ...prev,
+                                [index]: !prev[index]
+                            }
+                        }
+
+                        if (space.top + 400 > window.innerHeight) {
+                            seatsRefs.current[placeIndex].style.transform = 'translateY(-100%)';
+                            return {
+                                ...prev,
+                                [index]: !prev[index]
+                            }
+                        } else {
+                            seatsRefs.current[placeIndex].style.transform = 'translateY(0)';
+                            return {
+                                ...prev,
+                                [index]: !prev[index]
+                            }
+                        }
+                    } else {
+                        return {
+                            ...prev,
+                            [index]: !prev[index]
+                        }
+                    }
+                }
+            }
+        })
     }
 
-    console.log("RERENDER")
+    const selectedMockUP = async (e: ChangeEvent<HTMLInputElement>, index: number) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            try {
+                const imageData = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = (error) => reject(error);
+                    reader.readAsDataURL(files[0]);
+                });
+
+                setMockUPUrl(imageData);
+
+                const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+                    const img = document.createElement('img');
+                    img.onload = () => {
+                        resolve({
+                            width: img.naturalWidth,
+                            height: Math.round(Math.min(img.naturalHeight * (1110 / img.naturalWidth), 1200))
+                        });
+                    };
+                    img.src = imageData;
+                });
+
+                update(index, {
+                    ...fields[index],
+                    mockUP: files[0],
+                    mockup_height: dimensions.height,
+                    mockup_width: dimensions.width,
+                });
+
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+            }
+        }
+    };
+
+    const setSeatImage = (seatIndex: number, file: File) => {
+        update(currentFloor, {
+            ...fields[currentFloor],
+            seats: [
+                ...fields[currentFloor].seats.slice(0, seatIndex),
+                {
+                    ...fields[currentFloor].seats[seatIndex],
+                    image: file,
+                },
+                ...fields[currentFloor].seats.slice(seatIndex + 1)
+            ]
+        })
+    }
 
     return (
         <div className="flex justify-center min-h-[calc(100vh-100px)] h-full bg-[#e4c3a2] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
             <Header />
             <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-[1110px] flex flex-col items-center gap-4">
-
                 <div className="flex flex-col items-center gap-4 w-full max-w-[730px] max-h-[420px] p-4 bg-white text-black rounded-2xl text-lg">
-                    <input {...register('restaurant_name')} className={`${styles.reservation_inputs}`} type="text" placeholder="НАЗВАНИЕ" />
-                    <textarea {...register('description')} className={`${styles.reservation_inputs}`} placeholder="ОПИСАНИЕ" />
-                    <input {...register('address')} className={`${styles.reservation_inputs}`} type="text" placeholder="АДРЕСС" />
-                    <input {...register('phone_number')} className={`${styles.reservation_inputs}`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
                     <input
-                        onChange={async (e) => {
-                            const files = e.target.files;
-                            if (files && files.length > 0) {
-                                try {
-                                    const imageData = await new Promise<string>((resolve, reject) => {
-                                        const reader = new FileReader();
-                                        reader.onload = () => resolve(reader.result as string);
-                                        reader.onerror = (error) => reject(error);
-                                        reader.readAsDataURL(files[0]);
-                                    });
-
-                                    const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
-                                        const img = document.createElement('img');
-                                        img.onload = () => {
-                                            resolve({
-                                                width: img.naturalWidth,
-                                                height: Math.round(Math.min(img.naturalHeight * (1110 / img.naturalWidth), 1200))
-                                            });
-                                        };
-                                        img.src = imageData;
-                                    });
-
-                                    console.log('Размеры:', dimensions.width, 'x', dimensions.height);
-                                    setMockupSize({ ...dimensions })
-                                    setMockUP(files[0]);
-
-                                } catch (error) {
-                                    console.error('Ошибка загрузки:', error);
-                                }
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                setValue('cover', file)
                             }
                         }}
                         className="text-white hidden"
                         type="file"
                         accept="image/*"
-                        id="mockUP"
+                        id={`cover`}
                     />
-                    <label htmlFor="mockUP">ВЫБРАТЬ ФАЙЛ</label>
+                    <label htmlFor={`cover`}>ВЫБРАТЬ ОБЛОЖКУ</label>
+                    <input {...register('restaurant_name')} className={`${styles.reservation_inputs}`} type="text" placeholder="НАЗВАНИЕ" />
+                    <textarea {...register('description')} className={`${styles.reservation_inputs}`} placeholder="ОПИСАНИЕ" />
+                    <input {...register('address')} className={`${styles.reservation_inputs}`} type="text" placeholder="АДРЕСС" />
+                    <input {...register('phone_number')} className={`${styles.reservation_inputs}`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
+
+                    <div className="flex flex-row gap-5">
+                        <button type="button" onClick={addFloor}>Добавить этаж</button>
+                        <input type="number" defaultValue={1} min={1} max={countOfFloors} className="text-black" onChange={(e) => setCurrentFloor(Number(e.target.value) - 1)} />
+                    </div>
+
+                    <input
+                        onChange={(e) => selectedMockUP(e, currentFloor)}
+                        className="text-white hidden"
+                        type="file"
+                        accept="image/*"
+                        id={`mockUP-${currentFloor}`}
+                    />
+                    <label htmlFor={`mockUP-${currentFloor}`}>{mockUPUrl ? 'ИЗМЕНИТЬ ФАЙЛ' : 'ВЫБРАТЬ ФАЙЛ'}</label>
                 </div>
 
-                <div className="h-full w-full flex flex-col items-center gap-4 px-2">
-                    <button type="button" onClick={AddSeat} className={`bg-white text-black p-2 rounded-2xl cursor-pointer ${mockUP ? 'block' : 'hidden'}`}>ДОБАВИТЬ МЕСТО</button>
-                    <motion.div
-                        ref={constraintsRef}
-                        className={`relative mx-auto max-w-[1110px] bg-gray-100`}
-                        style={{
-                            width: '100%',
-                            height: mockupSize?.height
-                        }}
-                    >
-                        {mockUP ? (
-                            <div>
-                                <Image
-                                    src={URL.createObjectURL(mockUP)}
-                                    alt="mockup"
-                                    fill
-                                    priority 
-                                    className="h-auto w-full"
-                                />
-                            </div>
-                        ) : (
-                            null
-                        )}
+                <button type="button" onClick={() => addSeat(currentFloor)} className={`bg-white text-black p-2 rounded-2xl cursor-pointer `}>ДОБАВИТЬ МЕСТО</button>
 
-                        {/* {fields ? (
-                                <AnimatePresence 
-                                    // mode='wait'
-                                > */}
-                        {fields.map((field, fieldIndex) => {
-                            return (
-                                <motion.div key={field.uuid}>
-                                    <motion.div
-                                        key={field.uuid}
-                                        className={`absolute w-[25px] h-[25px] rounded-full bg-orange-500 outline-2 z-30 ${visibleMenu[field.uuid] ? 'z-50' : 'z-30'}`}
-                                        drag
-                                        whileDrag={{ scale: 0.8, cursor: 'grabbing' }}
-                                        dragConstraints={constraintsRef}
-                                        dragTransition={{ power: 0, timeConstant: 0 }}
-                                        dragMomentum={false}
+                <motion.div
+                    ref={constraintsRef}
+                    className={`relative mx-auto max-w-[1110px] bg-gray-100`}
+                    style={{ width: '100%', height: fields[currentFloor]?.mockup_height }}
+                >
+                    {mockUPUrl ? (
+                        <div>
+                            <Image
+                                src={mockUPUrl || ""}
+                                alt="mockup"
+                                fill
+                                priority
+                                className="h-auto w-full"
+                            />
+                        </div>
+                    ) : (
+                        null
+                    )}
 
-                                        style={{
-                                            x: coordinates[fieldIndex].x,
-                                            y: coordinates[fieldIndex].y,
-                                        }}
-
-                                        onDragEnd={(event, info) => handleDragElement(event, info, fieldIndex)}
-
-                                        onDragStart={(event, info) => {
-                                            setVisibleMenu(prev => ({
-                                                ...prev,
-                                                [field.uuid]: false
-                                            }));
-                                        }}
-
-                                        onClick={() => {
-                                            setVisibleMenu(prev => ({
-                                                ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}),
-                                                [field.uuid]: true
-                                            }));
-                                        }}
-                                    >
-                                        <motion.div
-                                            className="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 w-[30px] h-[30px] rounded-full bg-transparent outline-3 outline-orange-500 z-30"
-                                        >
-
-                                        </motion.div>
-
-                                    </motion.div>
-
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{
-                                            opacity: visibleMenu[field.uuid] ? 100 : 0
-                                        }}
-                                        transition={{
-                                            duration: .3
-                                        }}
-                                        className={`overflow-hidden absolute w-[300px] h-[400px] bg-white rounded-xl ${visibleMenu[field.uuid] ? 'block z-40' : 'hidden z-30'}`}
-                                        style={{
-                                            left: coordinates[fieldIndex].x,
-                                            top: coordinates[fieldIndex].y,
-                                        }}
-                                    >
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: visibleMenu[field.uuid] ? '100%' : 0 }}
-                                            transition={{
-                                                duration: .3
-                                            }}
-                                            className={`flex justify-end gap-4 px-2 h-[25px] bg-orange-500`}
-                                        >
-                                            <button className="cursor-pointer" type="button" onClick={() => handleDeleteSeat(field.uuid)}>delete</button>
-                                            <button className="cursor-pointer" type="button" onClick={() => handleCloseMenu(field.uuid)}>close</button>
-                                        </motion.div>
-
-                                        <motion.div
-                                            className={`flex flex-col items-center`}
-                                        >
-                                            <input
-                                                type="text"
-                                                className="text-black text-center"
-                                                {...register(`seats.${fieldIndex}.name`)}
-                                                placeholder={`New seat ${fieldIndex + 1}`}
-
-                                            />
-
-                                            <textarea
-                                                {...register(`seats.${fieldIndex}.description`)}
-                                                className="text-black"
-                                                placeholder={`Description`}
-                                            >
-
-                                            </textarea>
-
-                                            <input
-                                                {...register(`seats.${fieldIndex}.numberOfSeats`)}
-                                                type="number"
-                                                className="text-black"
-                                            />
-
-                                            <input type="file" className="text-black" onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                    setSeatImage(prev => [...prev, file]);
-                                                }
-                                            }} />
-
-                                            {seatImage && (
-                                                <div className="relative w-full h-28">
-                                                    {Array.isArray(seatImage) && seatImage[fieldIndex] && (
-                                                        <Image
-                                                            src={URL.createObjectURL(seatImage[fieldIndex])}
-                                                            layout="fill"
-                                                            objectFit="cover"
-                                                            alt="design"
-                                                        />
-                                                    )}
-                                                </div>
-                                            )}
-                                        </motion.div>
-                                    </motion.div>
+                    {(typeof visibleMenu !== 'undefined') && (fields.length > 0 && fields[currentFloor] && fields[currentFloor].mockUP && fields[currentFloor].seats && fields[currentFloor].seats.length > 0) && fields[currentFloor].seats.map((field, fieldIndex) => (
+                        <motion.div key={field.uuid}>
+                            <motion.div
+                                key={field.uuid}
+                                className="absolute w-[25px] h-[25px] rounded-full bg-orange-500 outline-2 z-50 cursor-move"
+                                drag
+                                whileDrag={{ scale: 0.8, cursor: 'grabbing' }}
+                                dragConstraints={constraintsRef}
+                                dragTransition={{ power: 0, timeConstant: 0 }}
+                                dragMomentum={false}
+                                style={{ x: field.x, y: field.y }}
+                                onDragEnd={(event: unknown, info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }) => handleDragElement(info, currentFloor, fieldIndex, field.uuid)}
+                                onDragStart={() => {
+                                    setVisibleMenu(prev => ({ ...prev, [field.uuid]: false }));
+                                }}
+                                onClick={() => onClickHandler(field.uuid, fieldIndex)}
+                            >
+                                <motion.div
+                                    className="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 w-[30px] h-[30px] rounded-full bg-transparent outline-3 outline-orange-500 z-30"
+                                >
 
                                 </motion.div>
-                            )
-                        })}
-                        {/* </AnimatePresence>
-                            ) : (
-                                null
-                            )} */}
-                    </motion.div>
-                </div>
+
+                            </motion.div>
+
+                            <motion.div
+                                ref={(el: HTMLDivElement) => {
+                                    if (el) {
+                                        seatsRefs.current[fieldIndex] = el
+                                    }
+                                }
+                                }
+                                initial={{ opacity: 0 }}
+                                animate={{
+                                    opacity: visibleMenu[field.uuid] ? 100 : 0,
+                                    height: visibleMenu[field.uuid] ? 400 : 0,
+                                }}
+                                transition={{
+                                    duration: .3
+                                }}
+                                className={`overflow-hidden absolute w-[300px] bg-white rounded-xl ${visibleMenu[field.uuid] ? 'block z-40' : 'z-30'}`}
+                                style={{
+                                    left: fields[currentFloor].seats[fieldIndex].x,
+                                    top: fields[currentFloor].seats[fieldIndex].y,
+                                }}
+                            >
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: visibleMenu[field.uuid] ? '100%' : 0 }}
+                                    transition={{
+                                        duration: .3
+                                    }}
+                                    className={`flex justify-end gap-4 px-2 h-[25px] bg-orange-500`}
+                                >
+                                    <button className="cursor-pointer" type="button" onClick={() => handleDeleteSeat(field.uuid)}>delete</button>
+                                    <button className="cursor-pointer" type="button" onClick={() => handleCloseMenu(field.uuid)}>close</button>
+                                </motion.div>
+
+                                <motion.div
+                                    className={`flex flex-col items-center`}
+                                >
+                                    <input
+                                        type="text"
+                                        className="text-black text-center"
+                                        {...register(`floors.${currentFloor}.seats.${fieldIndex}.name`)}
+                                        placeholder={`New seat ${fieldIndex + 1}`}
+
+                                    />
+
+                                    <textarea
+                                        {...register(`floors.${currentFloor}.seats.${fieldIndex}.description`)}
+                                        className="text-black"
+                                        placeholder={`Description`}
+                                    >
+
+                                    </textarea>
+
+                                    <input
+                                        {...register(`floors.${currentFloor}.seats.${fieldIndex}.numberOfSeats`)}
+                                        type="number"
+                                        className="text-black"
+                                    />
+
+                                    <input type="file" className="text-black" onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            setSeatImage(fieldIndex, file)
+                                        }
+                                    }} />
+
+                                    {field.image && (
+                                        <div className="relative w-full h-28">
+                                            <Image
+                                                src={URL.createObjectURL(field.image)}
+                                                layout="fill"
+                                                objectFit="cover"
+                                                alt="design"
+                                            />
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </motion.div>
+
+                        </motion.div>
+                    ))}
+
+                </motion.div>
 
                 <button type="submit" className="bg-white text-black p-2 rounded-2xl cursor-pointer">SUBMIT</button>
             </form>
-        </div>
-    )
+        </div >
+    );
 }

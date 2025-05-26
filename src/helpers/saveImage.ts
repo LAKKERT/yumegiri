@@ -28,7 +28,7 @@ export async function saveImage(file: string, fileURL: string, fileName: string)
     }
 }
 
-export async function saveRestaurantFiles(file: string | string[], fileURL: string | string[]) {
+export async function saveRestaurantFiles(file: string | string[] | null | (string | string[] | null)[], fileURL: string | string[] | null | ((string | string[] | null)[]) | ((string | string[] | null)[][])) {
     try {
         if (Array.isArray(file)) {
             file.map((file, index) => {

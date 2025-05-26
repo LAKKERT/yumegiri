@@ -137,7 +137,7 @@ export default function AddDish() {
                             <Image
                                 src={URL.createObjectURL(selectedFile)}
                                 alt="Preview"
-                                layout="fill"
+                                fill
                                 objectFit="cover"
                                 className="z-10"
                             />
