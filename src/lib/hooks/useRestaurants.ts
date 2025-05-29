@@ -2,11 +2,11 @@
 
 import { supabase } from "@/db/supabaseConfig";
 import { useState, useEffect } from "react";
-import { Restaurant } from "../interfaces/mockup";
+import { Places } from "../interfaces/mockup";
 
 export function useRestaurants() {
 
-    const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+    const [restaurants, setRestaurants] = useState<Places[]>([]);
 
     useEffect(() => {
         const getRestaurants = async () => {
@@ -16,7 +16,7 @@ export function useRestaurants() {
                         .from('restaurant')
                         .select(`
                             id,
-                            name,
+                            restaurant_name: name,
                             address,
                             phone_number,
                             description,
@@ -31,7 +31,7 @@ export function useRestaurants() {
                                 places (
                                     id,
                                     visible,
-                                    place_name,
+                                    name,
                                     description,
                                     status,
                                     number_of_seats,

@@ -7,6 +7,7 @@ import Link from "next/link";
 export default function Restaurants() {
 
     const { restaurants } = useRestaurants();
+    
     console.log(restaurants)
 
     return (

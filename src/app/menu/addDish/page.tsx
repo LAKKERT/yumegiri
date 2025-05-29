@@ -7,6 +7,9 @@ import { useRouter } from "next/navigation";
 import * as Yup from 'yup';
 import { yupResolver } from "@hookform/resolvers/yup";
 import { saveImage } from "@/helpers/saveImage";
+import { Categories, AddDish } from "@/lib/interfaces/menu";
+import { useCategories } from "@/lib/hooks/useCategories";
+import { supabase } from "@/db/supabaseConfig";
 
 const validationForm = Yup.object().shape({
     name: Yup.string().min(3, 'Минимальное количество символов 3').max(12, 'максимальное количество символов 12').required("Поле должно быть заполнено"),
@@ -22,43 +25,44 @@ const validationForm = Yup.object().shape({
 
 export default function AddDish() {
     const [selectedFile, setSelectedFile] = useState<File>();
-    const [categories, setCategories] = useState<CategoriesInterface[] | null>(null);
+    // const [categories, setCategories] = useState<Categories[] | null>(null);
+
+    const { categories } = useCategories();
 
     const router = useRouter();
 
-    const { register, handleSubmit, formState: { errors } } = useForm<AddDishInterface>({
+    const { register, handleSubmit, formState: { errors } } = useForm<AddDish>({
         resolver: yupResolver(validationForm),
     })
 
-    useEffect(() => {
-        const getCategories = async () => {
-            try {
-                const response = await fetch(`/api/menu/getCategoriesAPI`, {
-                    method: "GET",
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
+    // useEffect(() => {
+    //     const getCategories = async () => {
+    //         try {
+    //             const response = await fetch(`/api/menu/getCategoriesAPI`, {
+    //                 method: "GET",
+    //                 headers: {
+    //                     'Content-Type': 'application/json'
+    //                 }
+    //             })
 
-                const result = await response.json()
+    //             const result = await response.json()
 
-                if (response.ok) {
-                    setCategories(result.result);
-                } else {
-                    console.log("DataBase error");
-                }
+    //             if (response.ok) {
+    //                 setCategories(result.result);
+    //             } else {
+    //                 console.log("DataBase error");
+    //             }
 
-            } catch (error) {
-                console.log(error);
-            }
-        }
+    //         } catch (error) {
+    //             console.log(error);
+    //         }
+    //     }
 
-        getCategories();
-    }, [])
+    //     getCategories();
+    // }, [])
 
-    const onSubmit = async (data: AddDishInterface) => {
-        console.log(data)
-
+    const onSubmit = async (data: AddDish) => {
+        console.log('data',data)
         if (!selectedFile) {
             console.log('no files');
             return
@@ -66,30 +70,49 @@ export default function AddDish() {
 
         const fileProperty = await getFileName(selectedFile, data.category);
         const fileData = await processFile(selectedFile);
-        console.log(fileProperty)
+
         saveImage(fileData, fileProperty.path, fileProperty.newName);
 
         try {
+            if (process.env.NEXT_PUBLIC_ENV === 'production') {
+                const { error } = await supabase
+                    .from('menu')
+                    .insert({
+                        name: data.name,
+                        description: data.description,
+                        weight: data.weight,
+                        price: data.price,
+                        kcal: data.kcal,
+                        proteins: data.proteins,
+                        carbohydrates: data.carbohydrates,
+                        fats: data.fats,
+                        image: fileProperty.fullPath,
+                        category_id: Number(data.category),
+                })
+                
+                if (error) console.error(error);
+                else router.push('/menu');
 
-            const payload = {
-                ...data,
-                fileName: fileProperty.fullPath
-            }
-
-            const response = await fetch('/api/menu/addDishAPI', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-
-            if (response.ok) {
-                router.push('/menu')
             } else {
-                console.log('server error occured');
-            }
+                const payload = {
+                    ...data,
+                    fileName: fileProperty.fullPath
+                }
 
+                const response = await fetch('/api/menu/addDishAPI', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+
+                if (response.ok) {
+                    router.push('/menu')
+                } else {
+                    console.error('server error occured');
+                }
+            }
         } catch {
             console.log('Error')
         }
@@ -147,10 +170,10 @@ export default function AddDish() {
 
                     <div className="flex-1 w-full flex flex-col items-center gap-3 p-2 text-black">
                         <input className="w-3/4 text-center border-b-2 border-black outline-none focus:outline-none caret-black" {...register('name')} type="text" placeholder="НАЗВАНИЕ" />
-                        <textarea {...register('description')} 
+                        <textarea {...register('description')}
                             placeholder="ОПИСАНИЕ"
                             className="w-3/4 h-full resize-none outline-2 outline-black rounded-xl p-2 caret-black"
-                         />
+                        />
 
                         <select {...register('category')}>
                             {categories?.map((category, category_id) => (
@@ -188,14 +211,14 @@ export default function AddDish() {
                                     type="text"
                                     placeholder="Грамм"
                                 />
-                                
+
                                 <span className="text-2xl font-light text-black select-none">г</span>
                             </div>
 
                             <div className="relative caret-transparent">
-                                <input {...register('price')} 
+                                <input {...register('price')}
                                     className="caret-black text-center w-[80px] border-b-2 border-black outline-none focus:outline-none"
-                                    type="text" 
+                                    type="text"
                                 />
 
                                 <span className="text-2xl font-light text-black select-none">￥</span>

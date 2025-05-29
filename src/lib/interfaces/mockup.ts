@@ -13,45 +13,51 @@ export interface Restaurant {
         level: number;
         restaurant_id: number;
         places: {
-            id: number;
+            id: string;
             visible: boolean;
-            place_name: string
+            name: string;
             description: string;
             status: boolean;
             number_of_seats: number;
             image: string;
             x: number;
             y: number;
+            xPer: number;
+            yPer: number;
             floor_id: string;
         }[];
     }[];
 }
 
 export interface Seats {
-    uuid: string;
+    id: string;
     name: string;
     description: string;
-    numberOfSeats: number;
+    number_of_seats: number;
     image: File | null;
-    x: number
-    y: number
-    xPer: number
-    yPer: number
+    visible: boolean;
+    x: number;
+    y: number;
+    xPer: number;
+    yPer: number;
+}
+
+export interface Floors {
+    uuid: string;
+    mockup: File | null;
+    mockup_height: number;
+    mockup_width: number;
+    places: Seats[];
 }
 
 export interface Places {
+    id: number;
     restaurant_name: string;
     address: string;
     phone_number: string;
     description: string;
     cover: File | null;
-    floors: {
-        uuid: string;
-        mockUP: File | null;
-        mockup_height: number;
-        mockup_width: number;
-        seats: Seats[];
-    }[]
+    floors: Floors[]
 }
 
 export interface MockUpSizes {

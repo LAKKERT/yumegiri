@@ -28,29 +28,32 @@ export async function saveImage(file: string, fileURL: string, fileName: string)
     }
 }
 
-export async function saveRestaurantFiles(file: string | string[] | null | (string | string[] | null)[], fileURL: string | string[] | null | ((string | string[] | null)[]) | ((string | string[] | null)[][])) {
+export async function saveRestaurantFiles(files: string | string[] | null | (string | string[] | null)[], fileURL: string | string[] | null | (string | string[] | null)[] | (string | string[] | null)[][]) {
     try {
-        if (Array.isArray(file)) {
-            file.map((file, index) => {
-                const base64Data = file.replace(/^data:.+;base64,/,"");
+        if (files === null || fileURL === null) return;
 
+        if (Array.isArray(files)) {
+            files.forEach((file, index) => {
+                if (typeof file === 'string') {
+                    const url = Array.isArray(fileURL) ? fileURL[index] : fileURL as string;
+                    if (typeof url === 'string') {
+                        const base64Data = file.replace(/^data:.+;base64,/, "");
+                        const buffer = Buffer.from(base64Data, "base64");
+                        const filePath = path.join(process.cwd(), "public", url);
+                        fs.writeFileSync(filePath, buffer);
+                    }
+                }
+            });
+        } else if (typeof files === 'string') {
+            const url = Array.isArray(fileURL) ? fileURL[0] : fileURL as string;
+            if (typeof url === 'string') {
+                const base64Data = files.replace(/^data:.+;base64,/, "");
                 const buffer = Buffer.from(base64Data, "base64");
-
-                const filePath = path.join(process.cwd(), "public", fileURL[index]);
-
-                fs.writeFileSync(filePath, buffer)
-            })
-        }else {
-            const base64Data = file.replace(/^data:.+;base64,/,"");
-
-            const buffer = Buffer.from(base64Data, 'base64');
-
-            const filePath = path.join(process.cwd(), "public", fileURL as string);
-
-            fs.writeFileSync(filePath, buffer)
+                const filePath = path.join(process.cwd(), "public", url);
+                fs.writeFileSync(filePath, buffer);
+            }
         }
-
-    }catch (error) {
-        console.error(error)
+    } catch (error) {
+        console.error(error);
     }
 }

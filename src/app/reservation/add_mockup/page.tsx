@@ -12,11 +12,11 @@ import { Places } from "@/lib/interfaces/mockup";
 import { supabase } from "@/db/supabaseConfig";
 
 export default function AddMockUP() {
-    const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean } | undefined>(undefined);
+    const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>();
     const [mockUPUrl, setMockUPUrl] = useState<string | null>(null);
-    const [currentFloor, setCurrentFloor] = useState<number>(1);
+    const [currentFloor, setCurrentFloor] = useState<number>(0);
 
-    const [countOfFloors, setCountOfFloors] = useState<number>(1);
+    const [countOfFloors, setCountOfFloors] = useState<number>(0);
 
     const seatsRefs = useRef<HTMLDivElement[]>([]);
 
@@ -42,25 +42,29 @@ export default function AddMockUP() {
     const addFloor = () => {
         setCountOfFloors(prev => prev + 1);
         const idv4 = uuidv4();
+        const seatidv4 = uuidv4();
         append({
             uuid: idv4,
-            mockUP: null,
+            mockup: null,
             mockup_height: 0,
             mockup_width: 0,
-            seats: [
+            places: [
                 {
-                    uuid: uuidv4(),
+                    id: seatidv4,
                     description: '',
                     name: '',
                     image: null,
-                    numberOfSeats: 1,
+                    number_of_seats: 1,
                     x: 0,
                     y: 0,
                     xPer: 0,
                     yPer: 0,
+                    visible: false,
                 }
             ]
         });
+
+        setVisibleMenu((prev) => ({ ...prev, [seatidv4]: false }));
     };
 
     const addSeat = (currentFloor: number) => {
@@ -68,18 +72,19 @@ export default function AddMockUP() {
             const idv4 = uuidv4();
             update(currentFloor, {
                 ...fields[currentFloor],
-                seats: [
-                    ...fields[currentFloor].seats,
+                places: [
+                    ...fields[currentFloor].places,
                     {
-                        uuid: idv4,
+                        id: idv4,
                         name: '',
                         description: '',
-                        numberOfSeats: 1,
+                        number_of_seats: 1,
                         image: null,
                         x: 0,
                         y: 0,
                         xPer: 0,
                         yPer: 0,
+                        visible: false,
                     }
                 ]
             });
@@ -131,21 +136,21 @@ export default function AddMockUP() {
     const onSubmit = async (data: Places) => {
         try {
 
-            const mockupPropeties = data.floors.map(floor => getFileProperties(floor.mockUP));
-            const imagesProperty = data.floors.map(floor => floor.seats.map(seat => getFileProperties(seat.image)));
-
+            const mockupPropeties = data.floors.map(floor => getFileProperties(floor.mockup));
+            const imagesProperty = data.floors.map(floor => floor.places.map(seat => getFileProperties(seat.image)));
+            const imagesPropertyForSave = data.floors.flatMap(floor => floor.places.map(seat => getFileProperties(seat.image)));
             const coverProperties = getFileProperties(data.cover);
 
             const coverData = await processData(data.cover);
 
-            const mockUpDataPromises = data.floors.map(floor => processData(floor.mockUP));
+            const mockUpDataPromises = data.floors.map(floor => processData(floor.mockup));
             const mockUpData = await Promise.all(mockUpDataPromises);
 
-            const imagesDataPromises = data.floors.flatMap(floor => floor.seats.map(seat => processData(seat.image)));
+            const imagesDataPromises = data.floors.flatMap(floor => floor.places.map(seat => processData(seat.image)));
             const imagesData = await Promise.all(imagesDataPromises);
 
             saveRestaurantFiles(mockUpData, mockupPropeties);
-            saveRestaurantFiles(imagesData, imagesProperty);
+            saveRestaurantFiles(imagesData, imagesPropertyForSave);
             saveRestaurantFiles(coverData, coverProperties);
 
             const payload = {
@@ -182,15 +187,17 @@ export default function AddMockUP() {
                             .single();
                         if (floorError) console.error(floorError);
                         else {
-                            for (let seatIdx = 0; seatIdx < data.floors[floorIdx].seats.length; seatIdx++) {
+                            for (let seatIdx = 0; seatIdx < data.floors[floorIdx].places.length; seatIdx++) {
                                 const { error: placesError } = await supabase
                                     .from('places')
                                     .insert({
-                                        place_name: data.floors[floorIdx].seats[seatIdx].name,
-                                        description: data.floors[floorIdx].seats[seatIdx].description,
-                                        number_of_seats: data.floors[floorIdx].seats[seatIdx].numberOfSeats,
-                                        x: data.floors[floorIdx].seats[seatIdx].xPer,
-                                        y: data.floors[floorIdx].seats[seatIdx].yPer,
+                                        name: data.floors[floorIdx].places[seatIdx].name,
+                                        description: data.floors[floorIdx].places[seatIdx].description,
+                                        number_of_seats: data.floors[floorIdx].places[seatIdx].number_of_seats,
+                                        x: data.floors[floorIdx].places[seatIdx].x,
+                                        y: data.floors[floorIdx].places[seatIdx].y,
+                                        xPer: data.floors[floorIdx].places[seatIdx].xPer,
+                                        yPer: data.floors[floorIdx].places[seatIdx].yPer,
                                         image: imagesProperty[floorIdx][seatIdx],
                                         floor_id: floor_id.uuid,
                                     });
@@ -224,7 +231,13 @@ export default function AddMockUP() {
     };
 
     const handleDeleteSeat = (seatID: string) => {
-        remove(fields.findIndex(field => field.uuid === seatID));
+        let updatedPlaces = [...fields[currentFloor].places ]
+        updatedPlaces = updatedPlaces.filter((item) => item.id !== seatID)
+
+        update(currentFloor, {
+            ...fields[currentFloor],
+            places: updatedPlaces
+        })
 
         setVisibleMenu((prev) => {
             const newArray = { ...prev };
@@ -232,6 +245,20 @@ export default function AddMockUP() {
             return newArray;
         });
     };
+
+    const handleDeleteFloor = () => {
+        remove(currentFloor);
+
+        if (visibleMenu) {
+            setVisibleMenu((prev) => {
+                const newArray = { ...prev }
+                fields[currentFloor].places.map(place => delete newArray[place.id])
+                return newArray
+            })
+        }
+
+        setCountOfFloors(prev => prev - 1);
+    }
 
     const handleDragElement = useCallback((info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }, currentFloor: number, fieldIndex: number, index: string) => {
         if (!constraintsRef.current) return;
@@ -249,16 +276,16 @@ export default function AddMockUP() {
 
             update(currentFloor, {
                 ...fields[currentFloor],
-                seats: [
-                    ...fields[currentFloor].seats.slice(0, fieldIndex),
+                places: [
+                    ...fields[currentFloor].places.slice(0, fieldIndex),
                     {
-                        ...fields[currentFloor].seats[fieldIndex],
+                        ...fields[currentFloor].places[fieldIndex],
                         x: Math.round(relativeX),
                         y: Math.round(relativeY),
                         xPer: Math.round(relativeXPercent * 10) / 10,
                         yPer: Math.round(relativeYPercent * 10) / 10,
                     },
-                    ...fields[currentFloor].seats.slice(fieldIndex + 1)
+                    ...fields[currentFloor].places.slice(fieldIndex + 1)
                 ]
             });
 
@@ -302,13 +329,13 @@ export default function AddMockUP() {
 
     useEffect(() => {
         const changeFloor = async () => {
-            if (fields[currentFloor] && fields[currentFloor].mockUP !== null) {
+            if (fields[currentFloor] && fields[currentFloor].mockup !== null) {
                 try {
                     const imageData = await new Promise<string>((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = () => resolve(reader.result as string);
                         reader.onerror = (error) => reject(error);
-                        reader.readAsDataURL(fields[currentFloor].mockUP as File);
+                        reader.readAsDataURL(fields[currentFloor].mockup as File);
                     });
 
                     setMockUPUrl(imageData);
@@ -395,7 +422,7 @@ export default function AddMockUP() {
 
                 update(index, {
                     ...fields[index],
-                    mockUP: files[0],
+                    mockup: files[0],
                     mockup_height: dimensions.height,
                     mockup_width: dimensions.width,
                 });
@@ -409,13 +436,13 @@ export default function AddMockUP() {
     const setSeatImage = (seatIndex: number, file: File) => {
         update(currentFloor, {
             ...fields[currentFloor],
-            seats: [
-                ...fields[currentFloor].seats.slice(0, seatIndex),
+            places: [
+                ...fields[currentFloor].places.slice(0, seatIndex),
                 {
-                    ...fields[currentFloor].seats[seatIndex],
+                    ...fields[currentFloor].places[seatIndex],
                     image: file,
                 },
-                ...fields[currentFloor].seats.slice(seatIndex + 1)
+                ...fields[currentFloor].places.slice(seatIndex + 1)
             ]
         })
     }
@@ -444,8 +471,9 @@ export default function AddMockUP() {
                     <input {...register('phone_number')} className={`${styles.reservation_inputs}`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
 
                     <div className="flex flex-row gap-5">
+                        <button type="button" className="text-red-700" onClick={handleDeleteFloor}>Удалить этаж</button>
                         <button type="button" onClick={addFloor}>Добавить этаж</button>
-                        <input type="number" defaultValue={1} min={1} max={countOfFloors} className="text-black" onChange={(e) => setCurrentFloor(Number(e.target.value) - 1)} />
+                        <input type="number" defaultValue={1} min={1} max={countOfFloors} className={`text-black ${fields.length > 0 ? 'block' : 'hidden'}`} onChange={(e) => setCurrentFloor(Number(e.target.value) - 1)} />
                     </div>
 
                     <input
@@ -453,9 +481,9 @@ export default function AddMockUP() {
                         className="text-white hidden"
                         type="file"
                         accept="image/*"
-                        id={`mockUP-${currentFloor}`}
+                        id={`mockup-${currentFloor}`}
                     />
-                    <label htmlFor={`mockUP-${currentFloor}`}>{mockUPUrl ? 'ИЗМЕНИТЬ ФАЙЛ' : 'ВЫБРАТЬ ФАЙЛ'}</label>
+                    <label className={`${fields.length > 0 ? 'block' : 'hidden'}`} htmlFor={`mockup-${currentFloor}`}>{mockUPUrl ? 'ИЗМЕНИТЬ ФАЙЛ' : 'ВЫБРАТЬ ФАЙЛ'}</label>
                 </div>
 
                 <button type="button" onClick={() => addSeat(currentFloor)} className={`bg-white text-black p-2 rounded-2xl cursor-pointer `}>ДОБАВИТЬ МЕСТО</button>
@@ -479,10 +507,10 @@ export default function AddMockUP() {
                         null
                     )}
 
-                    {(typeof visibleMenu !== 'undefined') && (fields.length > 0 && fields[currentFloor] && fields[currentFloor].mockUP && fields[currentFloor].seats && fields[currentFloor].seats.length > 0) && fields[currentFloor].seats.map((field, fieldIndex) => (
-                        <motion.div key={field.uuid}>
+                    {(typeof visibleMenu !== 'undefined') && (fields.length > 0 && fields[currentFloor] && fields[currentFloor].mockup && fields[currentFloor].places && fields[currentFloor].places.length > 0) && fields[currentFloor].places.map((field, fieldIndex) => (
+                        <motion.div key={field.id}>
                             <motion.div
-                                key={field.uuid}
+                                key={field.id}
                                 className="absolute w-[25px] h-[25px] rounded-full bg-orange-500 outline-2 z-50 cursor-move"
                                 drag
                                 whileDrag={{ scale: 0.8, cursor: 'grabbing' }}
@@ -490,18 +518,17 @@ export default function AddMockUP() {
                                 dragTransition={{ power: 0, timeConstant: 0 }}
                                 dragMomentum={false}
                                 style={{ x: field.x, y: field.y }}
-                                onDragEnd={(event: unknown, info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }) => handleDragElement(info, currentFloor, fieldIndex, field.uuid)}
+                                onDragEnd={(event: unknown, info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }) => handleDragElement(info, currentFloor, fieldIndex, field.id)}
                                 onDragStart={() => {
-                                    setVisibleMenu(prev => ({ ...prev, [field.uuid]: false }));
+                                    setVisibleMenu(prev => ({ ...prev, [field.id]: false }));
                                 }}
-                                onClick={() => onClickHandler(field.uuid, fieldIndex)}
+                                onClick={() => onClickHandler(field.id, fieldIndex)}
                             >
                                 <motion.div
                                     className="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 w-[30px] h-[30px] rounded-full bg-transparent outline-3 outline-orange-500 z-30"
                                 >
 
                                 </motion.div>
-
                             </motion.div>
 
                             <motion.div
@@ -513,28 +540,28 @@ export default function AddMockUP() {
                                 }
                                 initial={{ opacity: 0 }}
                                 animate={{
-                                    opacity: visibleMenu[field.uuid] ? 100 : 0,
-                                    height: visibleMenu[field.uuid] ? 400 : 0,
+                                    opacity: visibleMenu[field.id] ? 100 : 0,
+                                    height: visibleMenu[field.id] ? 400 : 0,
                                 }}
                                 transition={{
                                     duration: .3
                                 }}
-                                className={`overflow-hidden absolute w-[300px] bg-white rounded-xl ${visibleMenu[field.uuid] ? 'block z-40' : 'z-30'}`}
+                                className={`overflow-hidden absolute w-[300px] bg-white rounded-xl ${visibleMenu[field.id] ? 'block z-40' : 'z-30'}`}
                                 style={{
-                                    left: fields[currentFloor].seats[fieldIndex].x,
-                                    top: fields[currentFloor].seats[fieldIndex].y,
+                                    left: fields[currentFloor].places[fieldIndex].x,
+                                    top: fields[currentFloor].places[fieldIndex].y,
                                 }}
                             >
                                 <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: visibleMenu[field.uuid] ? '100%' : 0 }}
+                                    animate={{ width: visibleMenu[field.id] ? '100%' : 0 }}
                                     transition={{
                                         duration: .3
                                     }}
                                     className={`flex justify-end gap-4 px-2 h-[25px] bg-orange-500`}
                                 >
-                                    <button className="cursor-pointer" type="button" onClick={() => handleDeleteSeat(field.uuid)}>delete</button>
-                                    <button className="cursor-pointer" type="button" onClick={() => handleCloseMenu(field.uuid)}>close</button>
+                                    <button className="cursor-pointer" type="button" onClick={() => handleDeleteSeat(field.id)}>delete</button>
+                                    <button className="cursor-pointer" type="button" onClick={() => handleCloseMenu(field.id)}>close</button>
                                 </motion.div>
 
                                 <motion.div
@@ -543,13 +570,13 @@ export default function AddMockUP() {
                                     <input
                                         type="text"
                                         className="text-black text-center"
-                                        {...register(`floors.${currentFloor}.seats.${fieldIndex}.name`)}
+                                        {...register(`floors.${currentFloor}.places.${fieldIndex}.name`)}
                                         placeholder={`New seat ${fieldIndex + 1}`}
 
                                     />
 
                                     <textarea
-                                        {...register(`floors.${currentFloor}.seats.${fieldIndex}.description`)}
+                                        {...register(`floors.${currentFloor}.places.${fieldIndex}.description`)}
                                         className="text-black"
                                         placeholder={`Description`}
                                     >
@@ -557,7 +584,7 @@ export default function AddMockUP() {
                                     </textarea>
 
                                     <input
-                                        {...register(`floors.${currentFloor}.seats.${fieldIndex}.numberOfSeats`)}
+                                        {...register(`floors.${currentFloor}.places.${fieldIndex}.number_of_seats`)}
                                         type="number"
                                         className="text-black"
                                     />

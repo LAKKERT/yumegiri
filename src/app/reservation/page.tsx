@@ -8,7 +8,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { supabase } from "@/db/supabaseConfig";
-import { Restaurant } from "@/lib/interfaces/mockup";
+import { Places } from "@/lib/interfaces/mockup";
 import { Reservation } from "@/lib/interfaces/reservation";
 
 const validationForm = Yup.object().shape({
@@ -22,9 +22,9 @@ const validationForm = Yup.object().shape({
 export default function ReservationPage() {
     const [restaurantIsSelected, setRestaurantIsSelected] = useState<{ id: number, index: number } | null>(null);
     const { restaurants } = useRestaurants();
-    const [restaurantDetail, setRestaurantDetail] = useState<Restaurant>();
+    const [restaurantDetail, setRestaurantDetail] = useState<Places>();
     const [currentFloor, setCurrentFloor] = useState<number>(0);
-    const [visibleMenu, setVisibleMenu] = useState<{ [key: number]: boolean }>({});
+    const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>({});
     const constraintsRef = useRef<HTMLDivElement>(null);
 
     const seatsRefs = useRef<HTMLDivElement[]>([]);
@@ -69,7 +69,7 @@ export default function ReservationPage() {
         }
     }
 
-    const onClickHandler = (index: number, placeIndex: number) => {
+    const onClickHandler = (index: string, placeIndex: number) => {
         setVisibleMenu((prev) => {
             if (prev[index] === true) {
                 return {
@@ -116,7 +116,8 @@ export default function ReservationPage() {
         <div className="mt-[100px] min-h-[calc(100vh-100px)] h-full w-full flex justify-center bg-[#e4c3a2] px-2 font-[family-name:var(--font-pacifico)] caret-transparent">
             <Header />
             <form onSubmit={handleSubmit(onSubmit)}>
-                <button type="button" className="absolute left-5 cursor-pointer z-50" onClick={() => {
+                <button type="button" className={`absolute left-5 cursor-pointer z-50 ${restaurantIsSelected ? 'block' : 'hidden'}`} onClick={() => {
+                    setCurrentFloor(0);
                     setRestaurantIsSelected(null)
                 }}>BACK</button>
                 <div className="h-full w-full flex flex-col items-center">
@@ -143,7 +144,7 @@ export default function ReservationPage() {
                                             }}
                                         >
                                             <div>
-                                                <p>{restaurant.name}</p>
+                                                <p>{restaurant.restaurant_name}</p>
                                                 <p>{restaurant.description}</p>
                                                 <Image
                                                     src={`http://localhost:3000/${restaurant.cover}`}
@@ -174,7 +175,7 @@ export default function ReservationPage() {
                         className={`absolute w-full max-w-[1110px] flex flex-col items-center gap-5 `}
                     >
 
-                        <input type="number" className="text-black" onChange={(e) => setCurrentFloor(Number(e.target.value))} />
+                        <input type="number" defaultValue={currentFloor + 1} min={1} max={restaurantDetail?.floors.length} className="text-black" onChange={(e) => setCurrentFloor(Number(e.target.value) - 1)} />
 
                         <div className="flex flex-col items-center gap-4 max-w-[730px] max-h-[420px] p-4 bg-white text-black rounded-2xl text-lg">
                             <input type="text" {...register('name')} placeholder="Имя фамелия" />
@@ -248,7 +249,7 @@ export default function ReservationPage() {
 
                                                     className={`flex flex-col items-center`}
                                                 >
-                                                    <h3 className="text-black ">{place?.place_name}</h3>
+                                                    <h3 className="text-black ">{place?.name}</h3>
 
                                                     <p className="text-black">{place?.description}</p>
 

@@ -1,4 +1,4 @@
-interface DishesInterface {
+export interface Dishes {
     id: number;
     name: string;
     description: string;
@@ -14,12 +14,12 @@ interface DishesInterface {
     category_name: string;
 }
 
-interface CategoriesInterface {
+export interface Categories {
     id: number;
     name: string;
 }
 
-interface AddDishInterface {
+export interface AddDish {
     name: string,
     description: string,
     weight: number,

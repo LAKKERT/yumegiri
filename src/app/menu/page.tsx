@@ -8,11 +8,15 @@ import { useEffect, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { supabase } from "@/db/supabaseConfig";
+import { Categories, Dishes } from "@/lib/interfaces/menu";
+import { useCategories } from "@/lib/hooks/useCategories";
 
 export default function Menu() {
-    const [dishesData, setDishesData] = useState<DishesInterface[]>([]);
-    const [categories, setCategories] = useState<CategoriesInterface[]>([]);
-    const [filteredCategories, setFilteredCategories] = useState<CategoriesInterface[]>([]);
+    const [dishesData, setDishesData] = useState<Dishes[]>([]);
+    // const [categories, setCategories] = useState<Categories[]>([]);
+    const { categories } = useCategories();
+    const [filteredCategories, setFilteredCategories] = useState<Categories[]>([]);
     const [editMode, setEditMode] = useState(false);
     const [deleteMode, setDeleteMode] = useState(false);
     const [deleteDishes, setDeleteDishes] = useState<number[]>([]);
@@ -23,24 +27,34 @@ export default function Menu() {
     useEffect(() => {
         const getDishes = async () => {
             try {
-                const response = await fetch(`/api/menu/getDishesAPI`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": 'Application/json',
+                if (process.env.NEXT_PUBLIC_ENV === 'production') {
+                    const { data: menu, error: menuError } = await supabase
+                        .from('menu')
+                        .select('*')
+
+                    if (menuError) console.error(menuError);
+
+                    if (menu) {
+                        setDishesData(menu);
                     }
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    setCategories(result.categories)
-                    setDishesData(result.dishes);
                 } else {
-                    console.log('error getting data');
-                }
+                    const response = await fetch(`/api/menu/getDishesAPI`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": 'Application/json',
+                        }
+                    });
 
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        setDishesData(result.dishes);
+                    } else {
+                        console.error('error getting data');
+                    }
+                }
             } catch (error) {
-                console.log(error);
+                console.error(error);
             }
         }
 
@@ -69,11 +83,9 @@ export default function Menu() {
             }
 
         } catch (error) {
-            console.log('Error deleting dishes: ', error);
+            console.error('Error deleting dishes: ', error);
         }
     }
-
-    console.log(deleteDishes)
 
     return (
         <div className=" mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
@@ -120,11 +132,14 @@ export default function Menu() {
                                 ДОБАВИТЬ +
                             </div>
                         </Link>
-                        {categories.length > 0 ? (
+
+                        <MenuList categories={filteredCategories} />
+
+                        {/* {categories.length > 0 ? (
                             <MenuList categories={filteredCategories} />
                         ) : (
                             null
-                        )}
+                        )} */}
                     </div>
 
                     <div className="w-full">

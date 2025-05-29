@@ -1,53 +1,50 @@
 'use client';
 
 import { useForm } from "react-hook-form";
-import { useState, useEffect } from "react";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { supabase } from "@/db/supabaseConfig";
+import { Categories } from "@/lib/interfaces/menu";
 
 const validationForm = Yup.object().shape({
     name: Yup.string().min(3, 'Название должно содержать минимум 3 символа').required('Поле обязательно для заполнения'),
 })
 
-interface FormInterface {
-    name: string;
-}
-
-interface CategoriesInterface {
-    id: number;
-    name: string;
-}
-
 interface ReciveData {
-    categories: CategoriesInterface[]
+    categories: Categories[]
 }
 
-export function MenuList(categoriesids: ReciveData) {
-    
-    const allCategories = categoriesids.categories
-
-    const { register, handleSubmit, formState: { errors } } = useForm<FormInterface>({
+export function MenuList({categories}: ReciveData) {
+    const { register, handleSubmit, formState: { errors } } = useForm<{name: string}>({
         resolver: yupResolver(validationForm)
     });
 
-    const onsubmit = async (data: FormInterface) => {
+    const onsubmit = async (data: { name: string }) => {
         try {
-            const response = await fetch('/api/menu/addCategoryAPI', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-
-            if (response.ok) {
-                window.location.reload()
+            if (process.env.NEXT_PUBLIC_ENV === 'production') {
+                const { error } = await supabase
+                    .from('categories')
+                    .insert({
+                        name: data.name
+                    });
+                if (error) console.error(error);
             } else {
-                console.error('DataBase error occured')
+                const response = await fetch('/api/menu/addCategoryAPI', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+    
+                if (response.ok) {
+                    window.location.reload()
+                } else {
+                    console.error('DataBase error occured')
+                }
             }
-
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
     }
 
@@ -56,8 +53,8 @@ export function MenuList(categoriesids: ReciveData) {
             <h2>МЕНЮ</h2>
 
             <div>
-                { allCategories?.map((category, category_id) => (
-                    <div className="text-base" key={category_id}>
+                {categories.length > 0 && categories.map((category) => (
+                    <div className="text-base" key={category.id}>
                         <a href={`#${category.id}`}>{category.name}</a>
                     </div>
                 ))}
