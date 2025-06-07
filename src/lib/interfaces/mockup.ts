@@ -36,6 +36,7 @@ export interface Seats {
     number_of_seats: number;
     image: File | null;
     visible: boolean;
+    status: boolean;
     x: number;
     y: number;
     xPer: number;
@@ -50,6 +51,12 @@ export interface Floors {
     places: Seats[];
 }
 
+export interface Gallery {
+    id: number;
+    image: string;
+    restaurant_id: number;
+}
+
 export interface Places {
     id: number;
     restaurant_name: string;
@@ -57,7 +64,8 @@ export interface Places {
     phone_number: string;
     description: string;
     cover: File | null;
-    floors: Floors[]
+    gallery: FileList | Gallery[] | null;
+    floors: Floors[];
 }
 
 export interface MockUpSizes {

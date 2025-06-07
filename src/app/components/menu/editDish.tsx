@@ -5,9 +5,14 @@ import { useEffect, useState } from "react";
 import * as Yup from "yup";
 import Image from "next/image";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { Categories, Dishes } from "@/lib/interfaces/menu";
+import { processData } from "@/helpers/readFiles";
+import { supabase } from "@/db/supabaseConfig";
+import { saveImage, saveRestaurantFiles } from "@/helpers/saveImage";
 
 interface Props {
-    dishesData: DishesInterface
+    dishesData: Dishes
+    categories: Categories[]
 }
 
 const validationSchema = Yup.object().shape({
@@ -24,9 +29,10 @@ const validationSchema = Yup.object().shape({
     category_name: Yup.string(),
 })
 
-export function EditDish({ dishesData }: Props) {
+export function EditDish({ dishesData, categories }: Props) {
+    const [selectedFile, setSelectedFile] = useState<File>();
 
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<DishesInterface>({
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<Dishes>({
         // resolver: yupResolver(validationSchema)
     })
 
@@ -46,22 +52,62 @@ export function EditDish({ dishesData }: Props) {
         })
     }, [dishesData])
 
-    const onsubmit = async (data) => {
-        console.log(data)
+    const getFileName = async (file: File, category: number) => {
+
+        const categoryName = categories?.find(c => c.id === category);
+        const fullName = file.name;
+
+        const newName = `${Date.now()}_${fullName}`;
+        const path = `/menu/${categoryName?.name}/`;
+        const fullPath = `${path}${newName}`;
+        return { newName, path, fullPath }
+    }
+
+    const onsubmit = async (data: Dishes) => {
+        let coverProperties
+
+        if (selectedFile) {
+            const coverData = await processData(selectedFile)
+            coverProperties = await getFileName(selectedFile, data.category_id);
+    
+            await saveImage(coverData as string, coverProperties.path, coverProperties.newName);
+        }
+
 
         try {
-            const response = await fetch(`/api/menu/updateDishAPI`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'Application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            console.log('test')
-            if (response.ok) {
-                window.location.reload();
+            if (process.env.NEXT_PUBLIC_ENV === 'production') {
+                const { error } = await supabase
+                    .from('menu')
+                    .update({
+                        name: data.name,
+                        description: data.description,
+                        kcal: data.kcal,
+                        proteins: data.proteins,
+                        carbohydrates: data.carbohydrates,
+                        fats: data.fats,
+                        weight: data.weight,
+                        price: data.price,
+                        category_id: data.category_id,
+                        image: selectedFile ? coverProperties?.fullPath : dishesData.image,
+                    })
+                    .eq('id', dishesData.id)
+
+                if (error) console.error(error);
+                else window.location.reload();
+
+            } else {
+                const response = await fetch(`/api/menu/updateDishAPI`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'Application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                if (response.ok) {
+                    window.location.reload();
+                }
             }
-        }catch (error) {
+        } catch (error) {
             console.error('Database error occured', error);
         }
     }
@@ -76,6 +122,13 @@ export function EditDish({ dishesData }: Props) {
                         fill
                         objectFit="cover"
                     />
+                    <input id='imageInput' onChange={(e) => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                            setSelectedFile(files[0])
+                        }
+                    }} className="text-black hidden" type="file" accept="image/*" />
+                    <label className="absolute bottom-5 left-1/2 transform -translate-x-1/2 cursor-pointer text-black z-20" htmlFor="imageInput">ВЫБРАТЬ КАРТИНКУ</label>
                 </div>
 
                 <div className="flex flex-col items-center gap-4 flex-1 text-black p-4">
@@ -86,11 +139,11 @@ export function EditDish({ dishesData }: Props) {
                         className="w-3/4 h-full resize-none outline-2 outline-black rounded-xl p-2 caret-black"
                     />
 
-                    {/* <select {...register('category')}>
-                    {categories?.map((category, category_id) => (
-                        <option key={category_id} value={`${category.id}`} >{category.name}</option>
-                    ))}
-                </select> */}
+                    <select {...register('category')}>
+                        {categories?.map((category, category_id) => (
+                            <option key={category_id} value={`${category.id}`} >{category.name}</option>
+                        ))}
+                    </select>
 
                     <div className="flex flex-row gap-4">
                         <div className="relative w-[90px] h-[65px] flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">

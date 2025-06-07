@@ -3,7 +3,7 @@ export interface Reservation {
     booked_date: Date;
     phone_number: string;
     restaurant_id: number;
-    place_id: number;
+    place_id: string;
 }
 
 export interface Mockup {

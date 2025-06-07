@@ -52,6 +52,7 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
 
     const constraintsRef = useRef<HTMLDivElement | null>(null);
     const seatsRefs = useRef<HTMLDivElement[]>([]);
+    const pointsRefs = useRef<HTMLDivElement[]>([]);
 
     const [mockUPUrl, setMockUPUrl] = useState<string | null>(null);
     const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>({});
@@ -88,6 +89,7 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                     name: '',
                     image: null,
                     number_of_seats: 1,
+                    status: false,
                     x: 0,
                     y: 0,
                     xPer: 0,
@@ -113,6 +115,7 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                         description: '',
                         number_of_seats: 1,
                         image: null,
+                        status: false,
                         x: 0,
                         y: 0,
                         xPer: 0,
@@ -262,13 +265,14 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
     const handleDragElement = useCallback((info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }, currentFloor: number, fieldIndex: number, index: string) => {
         if (!constraintsRef.current) return;
         const container = constraintsRef.current.getBoundingClientRect();
+        const element = pointsRefs.current[fieldIndex].getBoundingClientRect();
 
         if (container) {
             const scrollY = window.scrollY;
             const scrollX = window.scrollX;
 
-            const relativeX = (info.point.x - container.left) - scrollX;
-            const relativeY = (info.point.y - container.top) - scrollY;
+            const relativeX = (element.x - container.left) - scrollX;
+            const relativeY = (element.y - container.top);
 
             const relativeXPercent = Math.max(0, Math.min(100, (relativeX / container.width) * 100));
             const relativeYPercent = Math.max(0, Math.min(100, (relativeY / container.height) * 100));
@@ -292,10 +296,10 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                 if (seatsRefs.current[fieldIndex]) {
                     const container = constraintsRef.current?.getBoundingClientRect();
                     const space = seatsRefs.current[fieldIndex].getBoundingClientRect();
-                    const viewPortY = info.point.y - scrollY;
+                    const viewPortY = element.y - scrollY;
 
                     if (container && space) {
-                        if (info.point.x + space.width > (container.left + container.right) && (viewPortY + 400) > window.innerHeight) {
+                        if (element.x + space.width > (container.left + container.right) && (viewPortY + 400) > window.innerHeight) {
                             seatsRefs.current[fieldIndex].style.transform = 'translate(-100%, -100%)';
                             return {
                                 ...prev,
@@ -377,7 +381,7 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                 ref={constraintsRef}
                 className={`relative mx-auto max-w-[1110px] bg-gray-100`}
                 // style={{ width: '100%', height: fields[currentFloor]?.mockup_height }}
-                style={{ width: '100%', height: fields[currentFloor]?.mockup_height }}
+                style={{ width: 1110, height: fields[currentFloor]?.mockup_height }}
             >
                 {mockUPUrl ? (
                     <div>
@@ -396,6 +400,11 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                 {(fields.length > 0 && fields[currentFloor] && fields[currentFloor].mockup && fields[currentFloor].places && fields[currentFloor].places.length > 0) && fields[currentFloor].places.map((field, fieldIndex) => (
                     <motion.div key={field.id}>
                         <motion.div
+                            ref={(el: HTMLDivElement) => {
+                                if (el) {
+                                    pointsRefs.current[fieldIndex] = el;
+                                }
+                            }}
                             key={field.id}
                             className="absolute w-[25px] h-[25px] rounded-full bg-orange-500 outline-2 z-50 cursor-move"
                             drag
@@ -410,17 +419,17 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                             }}
                             onClick={() => onClickHandler(field.id, fieldIndex)}
                         >
-                            <motion.div
+                            {/* <motion.div
                                 className="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 w-[30px] h-[30px] rounded-full bg-transparent outline-3 outline-orange-500 z-30"
                             >
 
-                            </motion.div>
+                            </motion.div> */}
                         </motion.div>
 
                         <motion.div
                             ref={(el: HTMLDivElement) => {
                                 if (el) {
-                                    seatsRefs.current[fieldIndex] = el
+                                    seatsRefs.current[fieldIndex] = el;
                                 }
                             }
                             }

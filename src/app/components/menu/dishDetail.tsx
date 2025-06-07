@@ -14,7 +14,7 @@ export function DishDetail({ dishesData }: Props) {
                     src={`http://localhost:3000/${dishesData.image}`}
                     alt='Dish'
                     fill
-                    objectFit="cover"
+                    objectFit="contain"
                 />
             </div>
 

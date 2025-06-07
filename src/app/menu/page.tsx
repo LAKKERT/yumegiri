@@ -14,7 +14,6 @@ import { useCategories } from "@/lib/hooks/useCategories";
 
 export default function Menu() {
     const [dishesData, setDishesData] = useState<Dishes[]>([]);
-    // const [categories, setCategories] = useState<Categories[]>([]);
     const { categories } = useCategories();
     const [filteredCategories, setFilteredCategories] = useState<Categories[]>([]);
     const [editMode, setEditMode] = useState(false);
@@ -93,7 +92,6 @@ export default function Menu() {
 
             {showDetailIndex !== null ? (
                 <div className={`fixed min-h-[calc(100vh-100px)] w-full z-50 ${showDetail ? 'bg-[#6d6c6c67] block' : 'bg-transparent hidden'}`}
-                // onClick={() => setShowDetail(false)}
                 >
                     <motion.div
                         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] lg:max-w-[920px] lg:w-full max-h-[450px] h-full z-40 ${showDetail ? 'block' : 'hidden'}`}
@@ -101,7 +99,7 @@ export default function Menu() {
                         <div className={`w-full flex flex-row justify-end gap-4 z-50`}>
                             <button
                                 className="uppercase cursor-pointer"
-                                onClick={() => setEditMode(true)}
+                                onClick={() => {setEditMode(true)}}
                             >
                                 Редактировать
                             </button>
@@ -116,7 +114,7 @@ export default function Menu() {
                         {!editMode ? (
                             <DishDetail dishesData={dishesData[showDetailIndex]} />
                         ) : (
-                            <EditDish dishesData={dishesData[showDetailIndex]} />
+                            <EditDish dishesData={dishesData[showDetailIndex]} categories={categories} />
                         )}
                     </motion.div>
                 </div>
@@ -134,17 +132,18 @@ export default function Menu() {
                         </Link>
 
                         <MenuList categories={filteredCategories} />
-
-                        {/* {categories.length > 0 ? (
-                            <MenuList categories={filteredCategories} />
-                        ) : (
-                            null
-                        )} */}
                     </div>
 
                     <div className="w-full">
                         <div className="flex gap-4">
-                            <button type="button" className="cursor-pointer" onClick={() => setDeleteMode(prev => !prev)}>ВЫБРАТЬ БЛЮДА</button>
+                            <button type="button" className="cursor-pointer" 
+                            onClick={() => {
+                                setDeleteMode(prev => !prev)
+                                setDeleteDishes([]);
+                            }}
+                            >
+                                ВЫБРАТЬ БЛЮДА
+                            </button>
 
                             {deleteDishes.length > 0 ? (
                                 <button type="button" className="cursor-pointer" onClick={() => handleDeleteDishes(deleteDishes)}>УДАЛИТЬ БЛЮДА</button>
@@ -167,12 +166,8 @@ export default function Menu() {
                                                 key={dish.id}
                                                 className="relative cursor-pointer"
                                             >
-                                                {/* <div className="absolute left-0 top-0 w-6 h-6 rounded-tl-2xl bg-[#c28585] z-40">
-
-                                                </div> */}
-
                                                 <div
-                                                    className={`w-[300px] lg:w-full h-auto lg:h-[250px] flex lg:flex-row flex-col bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${deleteDishes.includes(dish.id) ? 'scale-95 outline-2 outline-orange-500' : 'scale-100'}`}
+                                                    className={`w-[300px] lg:w-full h-auto lg:h-[250px] flex lg:flex-row flex-col bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${deleteMode && deleteDishes.includes(dish.id) ? 'scale-95 outline-2 outline-orange-500' : 'scale-100'}`}
                                                     onClick={() => {
                                                         if (!deleteMode) {
                                                             setShowDetailIndex(dishIndex)
@@ -193,7 +188,7 @@ export default function Menu() {
                                                             src={`http://localhost:3000/${dish.image}`}
                                                             alt="Dish"
                                                             fill
-                                                            objectFit="cover"
+                                                            objectFit="contain"
                                                             quality={100}
                                                         />
                                                     </div>

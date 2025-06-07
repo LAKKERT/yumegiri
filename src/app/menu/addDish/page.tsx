@@ -2,12 +2,12 @@
 import { Header } from "@/app/components/header";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import * as Yup from 'yup';
 import { yupResolver } from "@hookform/resolvers/yup";
 import { saveImage } from "@/helpers/saveImage";
-import { Categories, AddDish } from "@/lib/interfaces/menu";
+import { AddDish } from "@/lib/interfaces/menu";
 import { useCategories } from "@/lib/hooks/useCategories";
 import { supabase } from "@/db/supabaseConfig";
 
@@ -23,12 +23,9 @@ const validationForm = Yup.object().shape({
     category: Yup.string().required('Выберите категорию')
 })
 
-export default function AddDish() {
+export default function AppendDish() {
     const [selectedFile, setSelectedFile] = useState<File>();
-    // const [categories, setCategories] = useState<Categories[] | null>(null);
-
     const { categories } = useCategories();
-
     const router = useRouter();
 
     const { register, handleSubmit, formState: { errors } } = useForm<AddDish>({
@@ -62,7 +59,6 @@ export default function AddDish() {
     // }, [])
 
     const onSubmit = async (data: AddDish) => {
-        console.log('data',data)
         if (!selectedFile) {
             console.log('no files');
             return
@@ -113,8 +109,8 @@ export default function AddDish() {
                     console.error('server error occured');
                 }
             }
-        } catch {
-            console.log('Error')
+        } catch (error){
+            console.error(error);
         }
     }
 
@@ -122,11 +118,9 @@ export default function AddDish() {
         const categoryInt = parseInt(category)
         const categoryName = categories?.find(c => c.id === categoryInt);
         const fullName = file.name;
-        console.log(categoryName?.name);
 
         const newName = `${Date.now()}_${fullName}`;
         const path = `/menu/${categoryName?.name}/`;
-        console.log('path', path);
         const fullPath = `${path}${newName}`;
         return { newName, path, fullPath }
     }
@@ -139,9 +133,6 @@ export default function AddDish() {
             reader.readAsDataURL(file);
         })
     }
-
-    console.log(errors)
-    console.log(categories)
 
     return (
         <div className="h-[calc(100vh-100px)] w-full flex justify-center items-center bg-[#e4c3a2] px-2 mt-[100px] font-[family-name:var(--font-pacifico)]  caret-transparent">

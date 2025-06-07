@@ -19,6 +19,7 @@ export default function AddMockUP() {
     const [countOfFloors, setCountOfFloors] = useState<number>(0);
 
     const seatsRefs = useRef<HTMLDivElement[]>([]);
+    const pointsRefs = useRef<HTMLDivElement[]>([]);
 
     const router = useRouter();
 
@@ -55,6 +56,7 @@ export default function AddMockUP() {
                     name: '',
                     image: null,
                     number_of_seats: 1,
+                    status: false,
                     x: 0,
                     y: 0,
                     xPer: 0,
@@ -80,6 +82,7 @@ export default function AddMockUP() {
                         description: '',
                         number_of_seats: 1,
                         image: null,
+                        status: false,
                         x: 0,
                         y: 0,
                         xPer: 0,
@@ -135,6 +138,11 @@ export default function AddMockUP() {
 
     const onSubmit = async (data: Places) => {
         try {
+            const galleryArray = (data.gallery) instanceof FileList ? Array.from(data.gallery) : [];
+
+            const galleryProperties = galleryArray.map(file => getFileProperties(file));
+            const galleryDataPromises = galleryArray.map(file => processData(file));
+            const galleryData = await Promise.all(galleryDataPromises);
 
             const mockupPropeties = data.floors.map(floor => getFileProperties(floor.mockup));
             const imagesProperty = data.floors.map(floor => floor.places.map(seat => getFileProperties(seat.image)));
@@ -152,6 +160,7 @@ export default function AddMockUP() {
             saveRestaurantFiles(mockUpData, mockupPropeties);
             saveRestaurantFiles(imagesData, imagesPropertyForSave);
             saveRestaurantFiles(coverData, coverProperties);
+            saveRestaurantFiles(galleryData, galleryProperties);
 
             const payload = {
                 ...data,
@@ -173,6 +182,17 @@ export default function AddMockUP() {
                 if (error) {
                     console.error(error);
                 } else {
+                    for (let i = 0; i < galleryProperties.length; i++) {
+                        const { error: galleryError } = await supabase
+                            .from('gallery')
+                            .insert({
+                                image: galleryProperties[i],
+                                restaurant_id: restaurant_id.id
+                            })
+                        if (galleryError) console.error(galleryError);
+                    }
+
+
                     for (let floorIdx = 0; floorIdx < data.floors.length; floorIdx++) {
                         const { data: floor_id, error: floorError } = await supabase
                             .from('floors')
@@ -231,7 +251,7 @@ export default function AddMockUP() {
     };
 
     const handleDeleteSeat = (seatID: string) => {
-        let updatedPlaces = [...fields[currentFloor].places ]
+        let updatedPlaces = [...fields[currentFloor].places]
         updatedPlaces = updatedPlaces.filter((item) => item.id !== seatID)
 
         update(currentFloor, {
@@ -263,13 +283,14 @@ export default function AddMockUP() {
     const handleDragElement = useCallback((info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }, currentFloor: number, fieldIndex: number, index: string) => {
         if (!constraintsRef.current) return;
         const container = constraintsRef.current.getBoundingClientRect();
+        const element = pointsRefs.current[fieldIndex].getBoundingClientRect();
 
         if (container) {
             const scrollY = window.scrollY;
             const scrollX = window.scrollX;
 
-            const relativeX = (info.point.x - container.left) - scrollX;
-            const relativeY = (info.point.y - container.top) - scrollY;
+            const relativeX = (element.x - container.left) - scrollX;
+            const relativeY = (element.y - container.top);
 
             const relativeXPercent = Math.max(0, Math.min(100, (relativeX / container.width) * 100));
             const relativeYPercent = Math.max(0, Math.min(100, (relativeY / container.height) * 100));
@@ -293,10 +314,10 @@ export default function AddMockUP() {
                 if (seatsRefs.current[fieldIndex]) {
                     const container = constraintsRef.current?.getBoundingClientRect();
                     const space = seatsRefs.current[fieldIndex].getBoundingClientRect();
-                    const viewPortY = info.point.y - scrollY;
+                    const viewPortY = element.y - scrollY;
 
                     if (container && space) {
-                        if (info.point.x + space.width > (container.left + container.right) && (viewPortY + 400) > window.innerHeight) {
+                        if (element.x + space.width > (container.left + container.right) && (viewPortY + 400) > window.innerHeight) {
                             seatsRefs.current[fieldIndex].style.transform = 'translate(-100%, -100%)';
                             return {
                                 ...prev,
@@ -447,6 +468,8 @@ export default function AddMockUP() {
         })
     }
 
+    console.log(fields)
+
     return (
         <div className="flex justify-center min-h-[calc(100vh-100px)] h-full bg-[#e4c3a2] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
             <Header />
@@ -465,6 +488,23 @@ export default function AddMockUP() {
                         id={`cover`}
                     />
                     <label htmlFor={`cover`}>ВЫБРАТЬ ОБЛОЖКУ</label>
+
+                    <input
+                        onChange={(e) => {
+                            const files = e.target.files;
+                            if (files) {
+                                setValue('gallery', files)
+                            }
+                        }}
+                        className="text-white hidden"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        id={`gallery`}
+                    />
+
+                    <label htmlFor={`gallery`}>ВЫБРАТЬ ФОТОГРАФИИ</label>
+
                     <input {...register('restaurant_name')} className={`${styles.reservation_inputs}`} type="text" placeholder="НАЗВАНИЕ" />
                     <textarea {...register('description')} className={`${styles.reservation_inputs}`} placeholder="ОПИСАНИЕ" />
                     <input {...register('address')} className={`${styles.reservation_inputs}`} type="text" placeholder="АДРЕСС" />
@@ -491,7 +531,7 @@ export default function AddMockUP() {
                 <motion.div
                     ref={constraintsRef}
                     className={`relative mx-auto max-w-[1110px] bg-gray-100`}
-                    style={{ width: '100%', height: fields[currentFloor]?.mockup_height }}
+                    style={{ width: 1110, height: fields[currentFloor]?.mockup_height }}
                 >
                     {mockUPUrl ? (
                         <div>
@@ -510,6 +550,11 @@ export default function AddMockUP() {
                     {(typeof visibleMenu !== 'undefined') && (fields.length > 0 && fields[currentFloor] && fields[currentFloor].mockup && fields[currentFloor].places && fields[currentFloor].places.length > 0) && fields[currentFloor].places.map((field, fieldIndex) => (
                         <motion.div key={field.id}>
                             <motion.div
+                                ref={(el: HTMLDivElement) => {
+                                    if (el) {
+                                        pointsRefs.current[fieldIndex] = el;
+                                    }
+                                }}
                                 key={field.id}
                                 className="absolute w-[25px] h-[25px] rounded-full bg-orange-500 outline-2 z-50 cursor-move"
                                 drag

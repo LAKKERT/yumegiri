@@ -6,7 +6,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Header } from '@/app/components/header';
 import { supabase } from '@/db/supabaseConfig';
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Floors, Places, Seats } from '@/lib/interfaces/mockup';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { RestaurantEditForm, EditRestaurantMockUp } from '@/app/components/restaurant/editRestaurantData';
@@ -14,6 +14,7 @@ import { saveRestaurantFiles } from '@/helpers/saveImage';
 
 export default function RestaurantDetail() {
     const params = useParams();
+    const router = useRouter();
 
     const [currentFloor, setCurrentFloor] = useState<number>(0);
     const [restaurantDetail, setRestaurantDetail] = useState<Places>();
@@ -29,6 +30,7 @@ export default function RestaurantDetail() {
             address: '',
             phone_number: '',
             cover: null,
+            gallery: null,
             floors: [],
         },
     })
@@ -97,6 +99,11 @@ export default function RestaurantDetail() {
                             phone_number,
                             description,
                             cover,
+                            gallery (
+                                id,
+                                image,
+                                restaurant_id
+                            ),
                             floors (
                                 uuid,
                                 mockup,
@@ -194,7 +201,7 @@ export default function RestaurantDetail() {
                             [index]: !prev[index]
                         }
                     }
-                }else {
+                } else {
                     return {
                         ...prev,
                         [index]: !prev[index]
@@ -280,9 +287,21 @@ export default function RestaurantDetail() {
                             }
                         }
                     }
+
+                    router.push('/restaurants')
                 }
             }
         }
+    }
+
+    const deleteRestaurant = async () => {
+        const { error } = await supabase
+            .from('restaurant')
+            .delete()
+            .eq('id', params?.id)
+
+        if (error) console.error(error);
+        else router.push('/restaurants')
     }
 
     return (
@@ -292,7 +311,10 @@ export default function RestaurantDetail() {
                 <motion.div
                     className={`h-full w-full max-w-[1110px] flex flex-col items-center gap-5 `}
                 >
-                    <button type='button' onClick={() => setIsEditMode(prev => !prev)}>Редактировать</button>
+                    <div>
+                        <button type='button' onClick={() => setIsEditMode(prev => !prev)}>Редактировать</button>
+                        <button type='button' className='text-red-600' onClick={deleteRestaurant}>УДАЛИТЬ</button>
+                    </div>
 
                     <div className={`flex flex-col items-center ${isEditMode ? 'hidden' : 'flex'}`}>
                         <h2>{restaurantDetail?.restaurant_name}</h2>
@@ -331,7 +353,6 @@ export default function RestaurantDetail() {
                                     style={{
                                         left: `${place.xPer}%`,
                                         top: `${place.yPer}%`,
-                                        transform: 'translate(-50%, -50%)'
                                     }}
                                     onClick={() => onClickHandler(place.id, placeIndex)}
                                 >

@@ -21,6 +21,11 @@ export function useRestaurants() {
                             phone_number,
                             description,
                             cover,
+                            gallery (
+                                id,
+                                image,
+                                restaurant_id
+                            ),
                             floors (
                                 uuid,
                                 mockup,
@@ -38,10 +43,13 @@ export function useRestaurants() {
                                     image,
                                     x,
                                     y,
+                                    xPer,
+                                    yPer,
                                     floor_id
                                 )
                             )
                         `);
+                        console.log(restaurantData)
                     if (restaurantError) console.error(restaurantError);
                     else {
                         setRestaurants(restaurantData);

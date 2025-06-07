@@ -16,7 +16,7 @@ const validationForm = Yup.object().shape({
     booked_date: Yup.date().required('Поле должно быть заполнено'),
     phone_number: Yup.string().required('Поле должно быть заполнено'),
     restaurant_id: Yup.number().required("Выбирете ресторан"),
-    place_id: Yup.number().required("Выбирете столик")
+    place_id: Yup.string().required("Выбирете столик")
 })
 
 export default function ReservationPage() {
@@ -50,7 +50,19 @@ export default function ReservationPage() {
                         restaurant_id: data.restaurant_id,
                     })
 
+                if (error) console.error(error);
+                else {
+                    const { error } = await supabase
+                        .from('places')
+                        .update({
+                            status: true
+                        })
+                        .eq('id', data.place_id)
+
                     if (error) console.error(error);
+                }
+
+                if (error) console.error(error);
             } else {
                 const response = await fetch(`/api/restaurant/addReservationAPI`, {
                     method: 'POST',
@@ -59,7 +71,7 @@ export default function ReservationPage() {
                     },
                     body: JSON.stringify(data)
                 })
-    
+
                 if (!response.ok) {
                     console.error('Server side Error');
                 }
@@ -102,7 +114,7 @@ export default function ReservationPage() {
                             [index]: !prev[index]
                         }
                     }
-                }else {
+                } else {
                     return {
                         ...prev,
                         [index]: !prev[index]
@@ -140,7 +152,7 @@ export default function ReservationPage() {
 
                                             onClick={() => {
                                                 field.onChange(restaurant.id);
-                                                setRestaurantIsSelected({id: restaurant.id, index: restaurantIndex});
+                                                setRestaurantIsSelected({ id: restaurant.id, index: restaurantIndex });
                                             }}
                                         >
                                             <div>
@@ -151,7 +163,7 @@ export default function ReservationPage() {
                                                     alt="Restaurant cover"
                                                     fill
                                                 />
-                                                
+
                                             </div>
                                         </motion.div>
                                     )}
@@ -205,15 +217,15 @@ export default function ReservationPage() {
                                     key={place.id}
                                     name="place_id"
                                     control={control}
-                                    defaultValue={0}
+                                    defaultValue={''}
                                     render={({ field }) => (
                                         <motion.div key={place.id}>
                                             <motion.div
                                                 className={`absolute w-[25px] h-[25px] rounded-full bg-orange-500 outline-2 z-30`}
                                                 style={{
-                                                    left: `${place.x}%`,
-                                                    top: `${place.y}%`,
-                                                    transform: 'translate(-50%, -50%)'
+                                                    left: `${place.xPer}%`,
+                                                    top: `${place.yPer}%`,
+
                                                 }}
                                                 onClick={() => onClickHandler(place.id, placeIndex)}
                                             >
@@ -232,8 +244,8 @@ export default function ReservationPage() {
                                                 }}
                                                 className={`overflow-hidden absolute w-[300px] bg-white rounded-xl `}
                                                 style={{
-                                                    left: `${place?.x}%`,
-                                                    top: `${place?.y}%`,
+                                                    left: `${place.xPer}%`,
+                                                    top: `${place.yPer}%`,
                                                 }}
                                             >
                                                 <motion.div
@@ -264,15 +276,19 @@ export default function ReservationPage() {
                                                         />
                                                     </div>
 
-                                                    <button
-                                                        className="text-black cursor-pointer"
-                                                        type="button"
-                                                        onClick={() => {
-                                                            field.onChange(place?.id)
-                                                        }}
-                                                    >
-                                                        выбрать
-                                                    </button>
+                                                    {place?.status ? (
+                                                        <p className="text-black">Столик занят</p>
+                                                    ) : (
+                                                        <button
+                                                            className="text-black cursor-pointer"
+                                                            type="button"
+                                                            onClick={() => {
+                                                                field.onChange(place?.id)
+                                                            }}
+                                                        >
+                                                            Выбрать
+                                                        </button>
+                                                    )}
                                                 </motion.div>
                                             </motion.div>
                                         </motion.div>
