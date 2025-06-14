@@ -72,3 +72,8 @@ export interface MockUpSizes {
     width: number;
     height: number;
 }
+
+export interface ChangeSeatsStatus {
+    place_id: string;
+    status: boolean;
+}

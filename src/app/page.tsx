@@ -16,8 +16,10 @@ export default function Home() {
     const scale = useTransform(scrollYProgress, [0, 0.1], [1, 1.5]);
     const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
 
+    console.log()
+
     return (
-        <div className={`h-[8000px] mt-[100px] font-[family-name:var(--font-pacifico)]  caret-transparent`}>
+        <div className={`h-[2500px] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent`}>
             <Header />
             <div className={`w-full h-full flex flex-col items-center bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] `}>
                 <div className="w-full">
@@ -90,10 +92,10 @@ export default function Home() {
                         style={{
                             opacity: useTransform(scrollYProgress, [0.15, 0.2, 0.28, .3], [0, 0.8, 1, .8]),
                             scale: useTransform(scrollYProgress, [0.05, 0.2, 0.3], [0, 0.8, 1]),
-                            y: useTransform(scrollYProgress, [0.35, .45], [0, -1000]),
+                            y: useTransform(scrollYProgress, [0.65, .8], [0, -1000]),
                         }}
                     >
-                        <ReservationPart />
+                        <MenuPart />
                     </motion.div>
 
                     <motion.div
@@ -102,13 +104,11 @@ export default function Home() {
                         style={{
                             opacity: useTransform(scrollYProgress, [0.4, .43], [0, 1]),
                             scale: useTransform(scrollYProgress, [0.4, .43], [0.8, 1]),
-                            y: useTransform(scrollYProgress, [0.4, .43], [800, 0]),
+                            y: useTransform(scrollYProgress, [0.7, 1], [800, 0]),
                         }}
                     >
-                        <MenuPart />
+                        <ReservationPart />
                     </motion.div>
-
-
                 </div>
             </div>
         </div>

@@ -4,24 +4,35 @@ import { v4 as uuidv4 } from 'uuid';
 import { useForm, useFieldArray } from "react-hook-form";
 import { useState, useRef, useCallback, useEffect, ChangeEvent } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
 import { saveRestaurantFiles } from "@/helpers/saveImage";
 import { useRouter } from "next/navigation";
+import { motion, animate, MotionValue, useMotionValue, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
 import styles from '@/app/styles/reservatoin/variables.module.scss';
 import { Places } from "@/lib/interfaces/mockup";
 import { supabase } from "@/db/supabaseConfig";
 
 export default function AddMockUP() {
-    const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>();
+    const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>({});
+    const [order, setOrder] = useState<number>(0);
     const [mockUPUrl, setMockUPUrl] = useState<string | null>(null);
     const [currentFloor, setCurrentFloor] = useState<number>(0);
+    const [selectedImages, setSelectedImages] = useState<File[]>([]);
+    const [isLastImage, setIsLastImage] = useState<boolean>(false);
+    const carouselRef = useRef<HTMLDivElement>(null);
 
-    const [countOfFloors, setCountOfFloors] = useState<number>(0);
+    const { scrollXProgress } = useScroll({ container: carouselRef });
+    const maskImage = useScrollOverflowMask(scrollXProgress);
+
+    const [countOfFloors, setCountOfFloors] = useState<number>(1);
 
     const seatsRefs = useRef<HTMLDivElement[]>([]);
     const pointsRefs = useRef<HTMLDivElement[]>([]);
+    const constraintsRef = useRef<HTMLDivElement | null>(null);
 
     const router = useRouter();
+
+    const y = useMotionValue(0);
+    const x = useMotionValue(0);
 
     const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<Places>({
         defaultValues: {
@@ -29,7 +40,13 @@ export default function AddMockUP() {
             address: '',
             phone_number: '',
             cover: null,
-            floors: [],
+            floors: [{
+                uuid: uuidv4(),
+                mockup: null,
+                mockup_height: 0,
+                mockup_width: 0,
+                places: []
+            }],
         },
     });
 
@@ -38,7 +55,42 @@ export default function AddMockUP() {
         name: 'floors',
     });
 
-    const constraintsRef = useRef<HTMLDivElement | null>(null);
+
+    function useScrollOverflowMask(scrollXProgress: MotionValue<number>) {
+        const left = `0%`
+        const right = `100%`
+        const leftInset = `5%`
+        const rightInset = `95%`
+        const transparent = `#0000`
+        const opaque = `#000`
+        const maskImage = useMotionValue(
+            `linear-gradient(90deg, ${opaque}, ${opaque} ${left}, ${opaque} ${rightInset}, ${transparent})`
+        )
+
+        useMotionValueEvent(scrollXProgress, "change", (value) => {
+            if (value === 0) {
+                animate(
+                    maskImage,
+                    `linear-gradient(90deg, ${opaque}, ${opaque} ${left}, ${opaque} ${rightInset}, ${transparent})`
+                )
+            } else if (value === 1) {
+                animate(
+                    maskImage,
+                    `linear-gradient(90deg, ${transparent}, ${opaque} ${leftInset}, ${opaque} ${right}, ${opaque})`
+                )
+            } else if (
+                scrollXProgress.getPrevious() === 0 ||
+                scrollXProgress.getPrevious() === 1
+            ) {
+                animate(
+                    maskImage,
+                    `linear-gradient(90deg, ${transparent}, ${opaque} ${leftInset}, ${opaque} ${rightInset}, ${transparent})`
+                )
+            }
+        })
+
+        return maskImage
+    }
 
     const addFloor = () => {
         setCountOfFloors(prev => prev + 1);
@@ -224,11 +276,11 @@ export default function AddMockUP() {
 
                                 if (placesError) {
                                     console.error(placesError);
-                                }
-                            }
-                        }
-                    }
-                }
+                                };
+                            };
+                        };
+                    };
+                };
             } else {
                 const response = await fetch(`/api/restaurant/addRestaurantMockUp`, {
                     method: 'POST',
@@ -279,6 +331,16 @@ export default function AddMockUP() {
 
         setCountOfFloors(prev => prev - 1);
     }
+
+    const prevImageHandler = () => {
+        if (order + 1 > 1) setOrder(prev => prev -= 1);
+        else return;
+    }
+
+    const nextImageHandler = () => {
+        if (order + 1 < selectedImages.length) setOrder(prev => prev += 1);
+    }
+
 
     const handleDragElement = useCallback((info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }, currentFloor: number, fieldIndex: number, index: string) => {
         if (!constraintsRef.current) return;
@@ -417,6 +479,16 @@ export default function AddMockUP() {
         })
     }
 
+    useEffect(() => {
+        if (!carouselRef.current) return
+
+        const previousCards = Array.from({ length: order });
+        const widths = previousCards.map((_, index) => index === order ? 275 : 250);
+
+        const totalWidth = widths.reduce((sum, width) => sum + width, 0);
+        carouselRef.current.scrollLeft = totalWidth + order * 8;
+    }, [order])
+
     const selectedMockUP = async (e: ChangeEvent<HTMLInputElement>, index: number) => {
         const files = e.target.files;
         if (files && files.length > 0) {
@@ -468,14 +540,24 @@ export default function AddMockUP() {
         })
     }
 
-    console.log(fields)
+    const prevFloorHandler = () => {
+        if (currentFloor + 1 > 1) setCurrentFloor(prev => prev -= 1);
+        y.set(20);
+        x.set(-1500);
+    }
+
+    const nextFloorHandler = () => {
+        if (currentFloor + 1 < countOfFloors) setCurrentFloor(prev => prev += 1);
+        y.set(-20)
+        x.set(1500);
+    }
 
     return (
-        <div className="flex justify-center min-h-[calc(100vh-100px)] h-full bg-[#e4c3a2] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
+        <div className="flex justify-center min-h-[calc(100vh-100px)] h-full bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
             <Header />
-            <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-[1110px] flex flex-col items-center gap-4">
-                <div className="flex flex-col items-center gap-4 w-full max-w-[730px] max-h-[420px] p-4 bg-white text-black rounded-2xl text-lg">
-                    <input
+            <form onSubmit={handleSubmit(onSubmit)} className="relative max-w-[1110px] h-full w-full flex flex-col gap-4 items-center px-2 pt-5">
+                <div className="flex flex-row gap-4 w-full max-h-[420px] p-4 text-white rounded-2xl text-lg">
+                    {/* <input
                         onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
@@ -487,46 +569,187 @@ export default function AddMockUP() {
                         accept="image/*"
                         id={`cover`}
                     />
-                    <label htmlFor={`cover`}>ВЫБРАТЬ ОБЛОЖКУ</label>
+                    <label htmlFor={`cover`}>ВЫБРАТЬ ОБЛОЖКУ</label> */}
 
-                    <input
-                        onChange={(e) => {
-                            const files = e.target.files;
-                            if (files) {
-                                setValue('gallery', files)
-                            }
-                        }}
-                        className="text-white hidden"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        id={`gallery`}
-                    />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="flex flex-col">
+                            <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>название</span>
+                            <input {...register('restaurant_name')} className={`${styles.reservation_inputs}`} type="text" placeholder="НАЗВАНИЕ" />
+                        </div>
 
-                    <label htmlFor={`gallery`}>ВЫБРАТЬ ФОТОГРАФИИ</label>
+                        <div className="flex flex-col">
+                            <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>описание</span>
+                            <textarea
+                                onInput={(e) => {
+                                    const target = e.target as HTMLTextAreaElement;
 
-                    <input {...register('restaurant_name')} className={`${styles.reservation_inputs}`} type="text" placeholder="НАЗВАНИЕ" />
-                    <textarea {...register('description')} className={`${styles.reservation_inputs}`} placeholder="ОПИСАНИЕ" />
-                    <input {...register('address')} className={`${styles.reservation_inputs}`} type="text" placeholder="АДРЕСС" />
-                    <input {...register('phone_number')} className={`${styles.reservation_inputs}`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
+                                    target.style.height = "auto";
+                                    target.style.minHeight = "40px";
+                                    target.style.height = `${target.scrollHeight}px`;
+                                }}
+                                {...register('description')}
+                                className={`${styles.reservation_inputs} overflow-y-hidden font-[family-name:var(--font-marck)]`}
+                                placeholder="ОПИСАНИЕ"
+                            />
+                        </div>
 
-                    <div className="flex flex-row gap-5">
-                        <button type="button" className="text-red-700" onClick={handleDeleteFloor}>Удалить этаж</button>
-                        <button type="button" onClick={addFloor}>Добавить этаж</button>
-                        <input type="number" defaultValue={1} min={1} max={countOfFloors} className={`text-black ${fields.length > 0 ? 'block' : 'hidden'}`} onChange={(e) => setCurrentFloor(Number(e.target.value) - 1)} />
+                        <div className="flex flex-col">
+                            <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>адрес</span>
+                            <input {...register('address')} className={`${styles.reservation_inputs} font-[family-name:var(--font-marck)]`} type="text" placeholder="АДРЕСС" />
+                        </div>
+
+                        <div className="flex flex-col">
+                            <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>контакты</span>
+                            <input {...register('phone_number')} className={`${styles.reservation_inputs} font-[family-name:var(--font-marck)]`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
+                        </div>
+
                     </div>
 
-                    <input
-                        onChange={(e) => selectedMockUP(e, currentFloor)}
-                        className="text-white hidden"
-                        type="file"
-                        accept="image/*"
-                        id={`mockup-${currentFloor}`}
-                    />
-                    <label className={`${fields.length > 0 ? 'block' : 'hidden'}`} htmlFor={`mockup-${currentFloor}`}>{mockUPUrl ? 'ИЗМЕНИТЬ ФАЙЛ' : 'ВЫБРАТЬ ФАЙЛ'}</label>
+                    <div className="w-full">
+                        <div className="text-center text-nowrap">
+                            <input
+                                onChange={(e) => {
+                                    const files = e.target.files;
+                                    if (files) {
+                                        setValue('gallery', files);
+                                        const galleryArray = files instanceof FileList ? Array.from(files) : []
+                                        setSelectedImages(galleryArray);
+                                    }
+                                }}
+                                className="text-white hidden"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                id={`gallery`}
+                            />
+
+                            <label htmlFor={`gallery`}>ВЫБРАТЬ ФОТОГРАФИИ</label>
+                        </div>
+
+                        <div className={`flex flex-row items-center gap-4 ${selectedImages.length === 0 ? 'hidden' : ''}`}>
+                            <button
+                                type="button"
+                                className="w-[25px] h-[25px] bg-white rounded-full text-black cursor-pointer"
+                                onClick={prevImageHandler}
+                            >
+                                &lt;
+                            </button>
+                            <motion.div ref={carouselRef}
+                                style={{
+                                    maskImage,
+                                    paddingRight: isLastImage ? "" : `${(200 * 2)}px`,
+                                    width: isLastImage ? `250px` : `650px`
+                                }}
+                                className={`snap-x scroll-smooth flex flex-row items-center gap-4 overflow-hidden overflow-x-hidden transform transition-all duration-300`}
+                            >
+                                <AnimatePresence mode='wait'>
+                                    {selectedImages.map((image, index) => (
+                                        <motion.div
+                                            key={index}
+                                            id={`image${index}`}
+                                            className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'} ${order === index ? 'w-[275px] h-[335px]' : 'min-w-[250px] w-[250px] h-[310px]'} rounded-md`}
+                                            initial={{
+                                                y: 80,
+                                                opacity: 0
+                                            }}
+                                            exit={{
+                                                y: -80,
+                                                opacity: 0,
+                                                background: '#000'
+                                            }}
+
+                                            animate={{
+                                                y: 0,
+                                                opacity: 100,
+                                                background: '#000'
+                                            }}
+                                            transition={{
+                                                duration: .3,
+                                                ease: "easeInOut"
+                                            }}
+                                        >
+                                            <Image
+                                                src={URL.createObjectURL(selectedImages[index])}
+                                                alt="restaurant gallery"
+                                                fill
+                                                objectFit="cover"
+                                                className={`rounded-md origin-center`}
+                                            >
+
+                                            </Image>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </motion.div>
+                            <button
+                                type="button"
+                                className="w-[25px] h-[25px] bg-white rounded-full text-black cursor-pointer"
+                                onClick={nextImageHandler}
+                            >
+                                &gt;
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <button type="button" onClick={() => addSeat(currentFloor)} className={`bg-white text-black p-2 rounded-2xl cursor-pointer `}>ДОБАВИТЬ МЕСТО</button>
+                <input
+                    onChange={(e) => selectedMockUP(e, currentFloor)}
+                    className="text-white hidden"
+                    type="file"
+                    accept="image/*"
+                    id={`mockUP-${currentFloor}`}
+                />
+                <label htmlFor={`mockUP-${currentFloor}`} className={`${styles.restaurant_button}`}>{mockUPUrl ? 'ИЗМЕНИТЬ ЧЕРТЁЖ' : 'ВЫБРАТЬ ЧЕРТЁЖ'}</label>
+                <div className={`flex flex-col items-center gap-4`}>
+                    <div className={`flex flex-row gap-5`}>
+                        <button type="button" onClick={addFloor} className={`${styles.restaurant_button}`}>Добавить этаж</button>
+                        <button type="button" onClick={handleDeleteFloor} className={`${styles.delete_button} bg-red-400`}>Удалить этаж</button>
+                    </div>
+
+                    <div className={`w-auto h-[70px] flex flex-row items-center justify-center gap-3 bg-white rounded-xl px-4`}>
+                        <p className="text-black text-xl uppercase">этаж</p>
+                        <AnimatePresence mode='wait'>
+                            <motion.span
+                                key={currentFloor}
+                                initial={{
+                                    y: y.get(),
+                                    opacity: 0,
+                                }}
+                                exit={{
+                                    y: y.get(),
+                                    opacity: 0,
+                                }}
+                                animate={{
+                                    y: 0,
+                                    opacity: 1,
+                                }}
+
+                                transition={{
+                                    duration: .3
+                                }}
+
+                                className="inline-block w-[40px] text-black text-center text-4xl uppercase align-text-top pb-2"
+                            >
+                                {currentFloor + 1}
+                            </motion.span>
+                        </AnimatePresence>
+
+                        <span className="text-black text-xl uppercase">из</span>
+                        <span className="inline-block w-[40px] text-black text-center text-4xl uppercase align-text-top pb-2">{countOfFloors}</span>
+
+                        <div className="flex flex-row gap-2">
+                            <button type="button" onClick={prevFloorHandler} className="relative w-[45px] h-[45px] flex justify-center items-center transform transition-colors ease-in-out duration-300 bg-[#f8845a] hover:bg-[#BF724F] rounded-lg text-3xl cursor-pointer">
+                                <p className="absolute top-0">&lt;</p>
+                            </button>
+
+                            <button type="button" onClick={nextFloorHandler} className="relative w-[45px] h-[45px] flex justify-center items-center bg-[#f8845a] hover:bg-[#BF724F] rounded-lg text-3xl cursor-pointer">
+                                <p className="absolute top-0">&gt;</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onClick={() => addSeat(currentFloor)} className={`${styles.restaurant_button}`}>ДОБАВИТЬ МЕСТО</button>
 
                 <motion.div
                     ref={constraintsRef}
@@ -547,7 +770,7 @@ export default function AddMockUP() {
                         null
                     )}
 
-                    {(typeof visibleMenu !== 'undefined') && (fields.length > 0 && fields[currentFloor] && fields[currentFloor].mockup && fields[currentFloor].places && fields[currentFloor].places.length > 0) && fields[currentFloor].places.map((field, fieldIndex) => (
+                    {(fields.length > 0 && fields[currentFloor] && fields[currentFloor].mockup && fields[currentFloor].places && fields[currentFloor].places.length > 0) && fields[currentFloor].places.map((field, fieldIndex) => (
                         <motion.div key={field.id}>
                             <motion.div
                                 ref={(el: HTMLDivElement) => {

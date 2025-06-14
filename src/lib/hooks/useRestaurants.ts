@@ -49,7 +49,7 @@ export function useRestaurants() {
                                 )
                             )
                         `);
-                        console.log(restaurantData)
+
                     if (restaurantError) console.error(restaurantError);
                     else {
                         setRestaurants(restaurantData);

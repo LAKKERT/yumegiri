@@ -11,10 +11,11 @@ const validationForm = Yup.object().shape({
 })
 
 interface ReciveData {
-    categories: Categories[]
+    categories: Categories[];
+    userRole: string;
 }
 
-export function MenuList({categories}: ReciveData) {
+export function MenuList({categories, userRole}: ReciveData) {
     const { register, handleSubmit, formState: { errors } } = useForm<{name: string}>({
         resolver: yupResolver(validationForm)
     });
@@ -60,8 +61,8 @@ export function MenuList({categories}: ReciveData) {
                 ))}
             </div>
 
-            <form onSubmit={handleSubmit(onsubmit)} className="flex flex-col">
-                <input {...register('name')} className="text-center w-full border-b-2 border-black outline-0 caret-black" type="text" />
+            <form onSubmit={handleSubmit(onsubmit)} className={`flex flex-col ${userRole === 'admin' ? '' : 'hidden'}`}>
+                <input {...register('name')} className="text-center w-full border-b-2 border-black outline-0 caret-black" type="text" placeholder="Название" />
                 <button type="submit">ДОБАВИТЬ</button>
             </form>
         </div>

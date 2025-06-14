@@ -11,20 +11,12 @@ export function Header() {
                     МЕНЮ
                 </Link>
 
-                <Link href="/reservation" className={`hidden lg:block py-2 px-4 transition-colors duration-300 border-2 rounded-xl border-transparent hover:border-white`}>
-                    ЗАРЕЗИРВИРОВАТЬ СТОЛ
-                </Link>
-
                 <Link href="/" className="text-3xl font-[family-name:var(--font-kiwimaru)]">
                     ユ メギリ
                 </Link>
 
                 <Link href="/restaurants" className={`hidden lg:block py-2 px-4 transition-colors duration-300 border-2 rounded-xl border-transparent hover:border-white`}>
                     РЕСТОРАНЫ
-                </Link>
-
-                <Link href="#" className={`hidden lg:block py-2 px-4 transition-colors duration-300 border-2 rounded-xl border-transparent hover:border-white`}>
-                    ПОМОЩЬ
                 </Link>
             </div>
         </div>

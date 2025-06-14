@@ -69,10 +69,9 @@ export function ReservationPart() {
                     pointerEvents: pointerEvents
                 }}
             >
-                <Link className="text-4xl" href="#"
+                <Link className="text-4xl" href="/restaurants"
                     onClick={(e) => {
                         if (scrollYProgress.get() < .25) {
-                            console.log('2341324')
                             e.preventDefault();
                         }
                     }}

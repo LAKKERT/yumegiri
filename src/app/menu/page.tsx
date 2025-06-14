@@ -11,8 +11,10 @@ import Link from "next/link";
 import { supabase } from "@/db/supabaseConfig";
 import { Categories, Dishes } from "@/lib/interfaces/menu";
 import { useCategories } from "@/lib/hooks/useCategories";
+import { useCheckUserRole } from "@/lib/hooks/useCheckRole";
 
 export default function Menu() {
+    const { userRole } = useCheckUserRole();
     const [dishesData, setDishesData] = useState<Dishes[]>([]);
     const { categories } = useCategories();
     const [filteredCategories, setFilteredCategories] = useState<Categories[]>([]);
@@ -98,7 +100,7 @@ export default function Menu() {
                     >
                         <div className={`w-full flex flex-row justify-end gap-4 z-50`}>
                             <button
-                                className="uppercase cursor-pointer"
+                                className={`uppercase cursor-pointer ${userRole === 'admin' ? '' : 'hidden'}`}
                                 onClick={() => {setEditMode(true)}}
                             >
                                 Редактировать
@@ -126,12 +128,12 @@ export default function Menu() {
                 <div className="h-full max-w-7xl w-full flex gap-4 mt-4">
                     <div className="flex flex-col items-center gap-2">
                         <Link className={`text-black`} href="/menu/addDish" >
-                            <div className="flex flex-row text-nowrap w-fit bg-white p-2 rounded-2xl">
+                            <div className={`flex flex-row text-nowrap w-fit bg-white p-2 rounded-2xl ${userRole === 'admin' ? '' : 'hidden'}`}>
                                 ДОБАВИТЬ +
                             </div>
                         </Link>
 
-                        <MenuList categories={filteredCategories} />
+                        <MenuList categories={filteredCategories} userRole={userRole} />
                     </div>
 
                     <div className="w-full">
@@ -142,7 +144,7 @@ export default function Menu() {
                                 setDeleteDishes([]);
                             }}
                             >
-                                ВЫБРАТЬ БЛЮДА
+                                ВЫБРАТЬ БЛЮДА ДЛЯ УДАЛЕНИЯ
                             </button>
 
                             {deleteDishes.length > 0 ? (

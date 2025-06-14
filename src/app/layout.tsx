@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Pacifico, Kiwi_Maru } from "next/font/google";
+import { Pacifico, Kiwi_Maru, Marck_Script, Klee_One, Arimo } from "next/font/google";
 import "./globals.css";
 
 const pacifico = Pacifico({
@@ -12,8 +12,26 @@ const pacifico = Pacifico({
 const kiwimaru = Kiwi_Maru({
     variable: '--font-kiwimaru',
     subsets: ['latin'],
-    weight: '400',
+    weight: '300',
 });
+
+const marck = Marck_Script({
+    variable: '--font-marck',
+    subsets: ['latin'],
+    weight: '400'
+})
+
+const klee = Klee_One({
+    variable: '--font-klee',
+    weight: '400',
+    subsets: ['latin', 'cyrillic']
+})
+
+const arimo = Arimo({
+    variable: '--font-arimo',
+    subsets: ['cyrillic', 'latin'],
+    weight: '400'
+})
 
 export const metadata: Metadata = {
     title: "Create Next App",
@@ -28,7 +46,7 @@ export default function RootLayout({
     return (
         <html lang="en" className="scroll-smooth">
             <body
-                className={`${pacifico.variable} ${kiwimaru.variable} antialiased`}
+                className={`${pacifico.variable} ${kiwimaru.variable} ${marck.variable} ${klee.variable} ${arimo.variable} antialiased`}
             >
                 {children}
             </body>

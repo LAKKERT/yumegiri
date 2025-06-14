@@ -4,7 +4,7 @@ import { ChangeEvent, useRef, useState, useCallback, useEffect } from "react";
 import styles from '@/app/styles/reservatoin/variables.module.scss';
 import { Places } from "@/lib/interfaces/mockup";
 import { FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove, UseFieldArrayReplace, UseFieldArrayUpdate, UseFormRegister, UseFormSetValue } from "react-hook-form";
-import { motion } from "motion/react";
+import { AnimatePresence, motion, useMotionValue } from "motion/react";
 import Image from "next/image";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -26,8 +26,8 @@ interface RestaurantForm {
 export function RestaurantEditForm({ register, setValue }: RestaurantForm) {
 
     return (
-        <div>
-            <input
+        <div className="w-full flex flex-col items-center gap-2">
+            {/* <input
                 onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -39,17 +39,43 @@ export function RestaurantEditForm({ register, setValue }: RestaurantForm) {
                 accept="image/*"
                 id={`cover`}
             />
-            <label htmlFor={`cover`}>ВЫБРАТЬ ОБЛОЖКУ</label>
-            <input {...register('restaurant_name')} className={`${styles.reservation_inputs}`} type="text" placeholder="НАЗВАНИЕ" />
-            <textarea {...register('description')} className={`${styles.reservation_inputs}`} placeholder="ОПИСАНИЕ" />
-            <input {...register('address')} className={`${styles.reservation_inputs}`} type="text" placeholder="АДРЕСС" />
-            <input {...register('phone_number')} className={`${styles.reservation_inputs}`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
+            <label htmlFor={`cover`}>ВЫБРАТЬ ОБЛОЖКУ</label> */}
+            <div>
+                <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>название</span>
+                <input {...register('restaurant_name')} className={`${styles.reservation_inputs}`} type="text" placeholder="НАЗВАНИЕ" />
+            </div>
+
+            <div>
+                <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>описание</span>
+                <textarea
+                    onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+
+                        target.style.height = "auto";
+                        target.style.minHeight = "40px";
+                        target.style.height = `${target.scrollHeight}px`;
+                    }}
+                    {...register('description')}
+                    className={`${styles.reservation_inputs} overflow-y-hidden font-[family-name:var(--font-marck)]`}
+                    placeholder="ОПИСАНИЕ"
+                />
+            </div>
+
+            <div>
+                <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>адрес</span>
+                <input {...register('address')} className={`${styles.reservation_inputs} font-[family-name:var(--font-marck)]`} type="text" placeholder="АДРЕСС" />
+            </div>
+
+            <div>
+                <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>контакты</span>
+                <input {...register('phone_number')} className={`${styles.reservation_inputs} font-[family-name:var(--font-marck)]`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
+            </div>
+
         </div>
     )
 }
 
 export function EditRestaurantMockUp({ restaurantDetail, register, fields, append, update, remove, replace }: MockUPForm) {
-
     const constraintsRef = useRef<HTMLDivElement | null>(null);
     const seatsRefs = useRef<HTMLDivElement[]>([]);
     const pointsRefs = useRef<HTMLDivElement[]>([]);
@@ -59,13 +85,28 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
     const [countOfFloors, setCountOfFloors] = useState<number>(0);
     const [currentFloor, setCurrentFloor] = useState<number>(0);
 
+    const y = useMotionValue(0);
+    const x = useMotionValue(0);
+
+    const prevFloorHandler = () => {
+        if (currentFloor + 1 > 1) setCurrentFloor(prev => prev -= 1);
+        y.set(20);
+        x.set(-1500);
+    }
+
+    const nextFloorHandler = () => {
+        if (currentFloor + 1 < countOfFloors) setCurrentFloor(prev => prev += 1);
+        y.set(-20)
+        x.set(1500);
+    }
+
     useEffect(() => {
         setCountOfFloors(restaurantDetail?.floors.length);
         replace(restaurantDetail?.floors);
 
         let newArray: Record<string, boolean> = {};
         restaurantDetail?.floors.flatMap(floor => floor.places.map(seat => {
-            newArray = {...newArray, [seat.id]: seat.visible}
+            newArray = { ...newArray, [seat.id]: seat.visible }
             return newArray;
         }))
 
@@ -233,7 +274,7 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
     };
 
     const handleDeleteSeat = (seatID: string) => {
-        let updatedPlaces = [...fields[currentFloor].places ]
+        let updatedPlaces = [...fields[currentFloor].places]
         updatedPlaces = updatedPlaces.filter((item) => item.id !== seatID)
 
         update(currentFloor, {
@@ -329,7 +370,7 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
 
     useEffect(() => {
         const changeFloor = async () => {
-            if (fields && fields[currentFloor] && fields[currentFloor].mockup && typeof fields[currentFloor].mockup === 'object' ) {
+            if (fields && fields[currentFloor] && fields[currentFloor].mockup && typeof fields[currentFloor].mockup === 'object') {
                 try {
                     const imageData = await new Promise<string>((resolve, reject) => {
                         const reader = new FileReader();
@@ -337,12 +378,12 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                         reader.onerror = (error) => reject(error);
                         reader.readAsDataURL(fields[currentFloor].mockup as File);
                     });
-                    
+
                     setMockUPUrl(imageData);
                 } catch (error) {
                     console.error('Ошибка загрузки изображения:', error);
                 }
-            } 
+            }
             else if (fields && fields[currentFloor] && typeof fields[currentFloor].mockup === 'string') {
                 setMockUPUrl(fields[currentFloor].mockup);
             }
@@ -353,16 +394,7 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
 
     return (
         <div className="w-full max-w-[1110px] flex flex-col items-center gap-4">
-            <div>
-
-                <input type="number" defaultValue={1} min={1} max={countOfFloors} className="text-black" onChange={(e) => {
-                    setCurrentFloor(Number(e.target.value) - 1);
-                }} />
-
-                <div className="flex flex-row gap-5">
-                    <button type="button" onClick={addFloor}>Добавить этаж</button>
-                </div>
-
+            <div className="flex flex-col items-center gap-4">
                 <input
                     onChange={(e) => selectedMockUP(e, currentFloor)}
                     className="text-white hidden"
@@ -370,18 +402,63 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                     accept="image/*"
                     id={`mockUP-${currentFloor}`}
                 />
-                <label htmlFor={`mockUP-${currentFloor}`}>{mockUPUrl ? 'ИЗМЕНИТЬ ФАЙЛ' : 'ВЫБРАТЬ ФАЙЛ'}</label>
+                <label htmlFor={`mockUP-${currentFloor}`} className={`${styles.restaurant_button}`}>{mockUPUrl ? 'ИЗМЕНИТЬ ЧЕРТЁЖ' : 'ВЫБРАТЬ ЧЕРТЁЖ'}</label>
+                <div className={`flex flex-col items-center gap-4`}>
+                    <div className="flex flex-row gap-5">
+                        <button type="button" onClick={addFloor} className={`${styles.restaurant_button}`}>Добавить этаж</button>
+                        <button type="button" onClick={handleDeleteFloor} className={`${styles.delete_button} bg-red-400`}>Удалить этаж</button>
+                    </div>
+
+                    <div className="w-auto h-[70px] flex flex-row items-center justify-center gap-3 bg-white rounded-xl px-4">
+                        <p className="text-black text-xl uppercase">этаж</p>
+                        <AnimatePresence mode='wait'>
+                            <motion.span
+                                key={currentFloor}
+                                initial={{
+                                    y: y.get(),
+                                    opacity: 0,
+                                }}
+                                exit={{
+                                    y: y.get(),
+                                    opacity: 0,
+                                }}
+                                animate={{
+                                    y: 0,
+                                    opacity: 1,
+                                }}
+
+                                transition={{
+                                    duration: .3
+                                }}
+
+                                className="inline-block w-[40px] text-black text-center text-4xl uppercase align-text-top pb-2"
+                            >
+                                {currentFloor + 1}
+                            </motion.span>
+                        </AnimatePresence>
+
+                        <span className="text-black text-xl uppercase">из</span>
+                        <span className="inline-block w-[40px] text-black text-center text-4xl uppercase align-text-top pb-2">{countOfFloors}</span>
+
+                        <div className="flex flex-row gap-2">
+                            <button type="button" onClick={prevFloorHandler} className="relative w-[45px] h-[45px] flex justify-center items-center transform transition-colors ease-in-out duration-300 bg-[#f8845a] hover:bg-[#BF724F] rounded-lg text-3xl cursor-pointer">
+                                <p className="absolute top-0">&lt;</p>
+                            </button>
+
+                            <button type="button" onClick={nextFloorHandler} className="relative w-[45px] h-[45px] flex justify-center items-center bg-[#f8845a] hover:bg-[#BF724F] rounded-lg text-3xl cursor-pointer">
+                                <p className="absolute top-0">&gt;</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <button type="button" onClick={handleDeleteFloor}>Удалить этаж</button>
-
-            <button type="button" onClick={() => addSeat(currentFloor)} className={`bg-white text-black p-2 rounded-2xl cursor-pointer `}>ДОБАВИТЬ МЕСТО</button>
+            <button type="button" onClick={() => addSeat(currentFloor)} className={`${styles.restaurant_button}`}>ДОБАВИТЬ МЕСТО</button>
 
             <motion.div
                 ref={constraintsRef}
-                className={`relative mx-auto max-w-[1110px] bg-gray-100`}
-                // style={{ width: '100%', height: fields[currentFloor]?.mockup_height }}
-                style={{ width: 1110, height: fields[currentFloor]?.mockup_height }}
+                className={`relative mx-auto max-w-[1110px]`}
+                style={{ width: 1110, height: `${fields[currentFloor]?.mockup_height}px` }}
             >
                 {mockUPUrl ? (
                     <div>
@@ -389,8 +466,8 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                             src={mockUPUrl || ''}
                             alt="mockup"
                             fill
+                            className={`h-auto w-full rounded-2xl opacity-100`}
                             priority
-                            className="h-auto w-full"
                         />
                     </div>
                 ) : (
@@ -419,11 +496,6 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                             }}
                             onClick={() => onClickHandler(field.id, fieldIndex)}
                         >
-                            {/* <motion.div
-                                className="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 w-[30px] h-[30px] rounded-full bg-transparent outline-3 outline-orange-500 z-30"
-                            >
-
-                            </motion.div> */}
                         </motion.div>
 
                         <motion.div
@@ -480,7 +552,6 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
 
                                 <input
                                     {...register(`floors.${currentFloor}.places.${fieldIndex}.number_of_seats`)}
-                                    // defaultValue={fields[currentFloor].places[]}
                                     type="number"
                                     className="text-black"
                                 />
@@ -495,7 +566,7 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                                 {field.image && (
                                     <div className="relative w-full h-28">
                                         <Image
-                                            src={ typeof field.image === 'string' ? field.image : URL.createObjectURL(field.image)}
+                                            src={typeof field.image === 'string' ? field.image : URL.createObjectURL(field.image)}
                                             // src={field.image}
                                             layout="fill"
                                             objectFit="cover"

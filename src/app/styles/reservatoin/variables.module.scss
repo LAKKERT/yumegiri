@@ -1,13 +1,103 @@
-.reservation_inputs {
-    width: 100%;
+.create_inputs {
+    width: 350px;
     max-width: 650px;
 
-    border: 2px solid black;
-    border-radius: 10px;
-
+    border-bottom: 2px solid white;
     padding: 4px;
 
     outline: none;
     color: black;
     caret-color: black;
+
+    font-size: 20px;
+    text-align: center;
+}
+
+.reservation_inputs {
+    width: 350px;
+    max-width: 650px;
+
+    border-bottom: 2px solid white;
+    padding: 4px;
+
+    outline: none;
+    color: white;
+    caret-color: black;
+
+    font-size: 20px;
+    text-align: center;
+}
+
+.reservation_textarea {
+    width: 350px;
+    max-width: 650px;
+    min-height: 40px;
+
+    border: 2px solid white;
+    border-radius: 10px;
+    padding: 4px;
+
+    outline: none;
+    color: white;
+    caret-color: black;
+
+    font-size: 20px;
+    text-align: center;
+}
+
+.advice {
+    font-size: 14px;
+    letter-spacing: -4px;
+    user-select: none;
+}
+
+.user_data_fields {
+    width: 100%;
+    max-width: 540px;
+
+    border-bottom: 2px solid white;
+    padding: 0 6px;
+
+    font-size: 20px;
+    text-align: left;
+    letter-spacing: 1px;
+    word-spacing: 4px;
+
+    outline: none;
+
+    caret-color: black;
+}
+
+.restaurant_button {
+    width: auto;
+    height: 40px;
+    background-color: white;
+    color: black;
+    padding: 8px;
+
+    border-radius: 16px;
+
+    transition-duration: .3s;
+}
+
+.restaurant_button:hover {
+    transition: ease-in-out;
+    transition-duration: .3s;
+    background-color: rgb(206, 206, 206);
+}
+
+.delete_button {
+    background-color: oklch(70.4% 0.191 22.216);
+    color: white;
+    padding: 8px;
+
+    border-radius: 16px;
+
+    transition-duration: .3s;
+}
+
+.delete_button:hover {
+    transition: ease-in-out;
+    transition-duration: .3s;
+    background-color: oklch(63.232% 0.1681 21.911);;
 }
