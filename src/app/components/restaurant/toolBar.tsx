@@ -41,11 +41,11 @@ export function RestaurantToolBar({ changeEditMode, restaurantId }: Props) {
     return (
         <div className='flex flex-col items-center z-40'>
             <div className="flex flex-row gap-4 p-4">
-                <button type='button' className={`${styles.restaurant_button}`} onClick={setEditMode}>
+                <button type='button' className={`${styles.restaurant_button} cursor-pointer`} onClick={setEditMode}>
                     Редактировать
                 </button>
 
-                <button type='button' className={`${styles.delete_button}`} onClick={setConfirm}>
+                <button type='button' className={`${styles.delete_button} cursor-pointer`} onClick={setConfirm}>
                     Удалить
                 </button>
 

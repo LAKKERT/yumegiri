@@ -20,26 +20,12 @@ interface MockUPForm {
 
 interface RestaurantForm {
     register: UseFormRegister<Places>;
-    setValue: UseFormSetValue<Places>;
 }
 
-export function RestaurantEditForm({ register, setValue }: RestaurantForm) {
+export function RestaurantEditForm({ register }: RestaurantForm) {
 
     return (
         <div className="w-full flex flex-col items-center gap-2">
-            {/* <input
-                onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                        setValue('cover', file)
-                    }
-                }}
-                className="text-white hidden"
-                type="file"
-                accept="image/*"
-                id={`cover`}
-            />
-            <label htmlFor={`cover`}>ВЫБРАТЬ ОБЛОЖКУ</label> */}
             <div>
                 <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>название</span>
                 <input {...register('restaurant_name')} className={`${styles.reservation_inputs}`} type="text" placeholder="НАЗВАНИЕ" />
@@ -80,10 +66,11 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
     const seatsRefs = useRef<HTMLDivElement[]>([]);
     const pointsRefs = useRef<HTMLDivElement[]>([]);
 
-    const [mockUPUrl, setMockUPUrl] = useState<string | null>(null);
+    const [mockUPUrl, setMockUPUrl] = useState<string | File | null>(null);
     const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>({});
     const [countOfFloors, setCountOfFloors] = useState<number>(0);
     const [currentFloor, setCurrentFloor] = useState<number>(0);
+    const [dragging, setDragging] = useState<boolean>(false);
 
     const y = useMotionValue(0);
     const x = useMotionValue(0);
@@ -110,9 +97,10 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
             return newArray;
         }))
 
+        setMockUPUrl(restaurantDetail.floors[0].mockup);
         setVisibleMenu(newArray);
 
-    }, [restaurantDetail])
+    }, [restaurantDetail, replace])
 
     const addFloor = () => {
         setCountOfFloors(prev => prev + 1);
@@ -235,6 +223,8 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                     const container = constraintsRef.current?.getBoundingClientRect();
                     const space = seatsRefs.current[placeIndex].getBoundingClientRect();
 
+                    console.log(`place: ${space.left} ${space.top} ${space.right} ${space.bottom} ${space.width} ${space.height}`);
+
                     if (container && space) {
                         if (space.right + space.width > (container.left + container.right) && (space.top + 400) > window.innerHeight) {
                             seatsRefs.current[placeIndex].style.transform = 'translate(-100%, -100%)';
@@ -303,13 +293,13 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
         setCountOfFloors(prev => prev - 1);
     }
 
-    const handleDragElement = useCallback((info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }, currentFloor: number, fieldIndex: number, index: string) => {
+    const handleDragElement = useCallback((info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }, currentFloor: number, fieldIndex: number) => {
         if (!constraintsRef.current) return;
         const container = constraintsRef.current.getBoundingClientRect();
         const element = pointsRefs.current[fieldIndex].getBoundingClientRect();
 
         if (container) {
-            const scrollY = window.scrollY;
+            // const scrollY = window.scrollY;
             const scrollX = window.scrollX;
 
             const relativeX = (element.x - container.left) - scrollX;
@@ -332,41 +322,8 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                     ...fields[currentFloor].places.slice(fieldIndex + 1)
                 ]
             });
-
-            setVisibleMenu((prev) => {
-                if (seatsRefs.current[fieldIndex]) {
-                    const container = constraintsRef.current?.getBoundingClientRect();
-                    const space = seatsRefs.current[fieldIndex].getBoundingClientRect();
-                    const viewPortY = element.y - scrollY;
-
-                    if (container && space) {
-                        if (element.x + space.width > (container.left + container.right) && (viewPortY + 400) > window.innerHeight) {
-                            seatsRefs.current[fieldIndex].style.transform = 'translate(-100%, -100%)';
-                            return {
-                                ...prev,
-                                [index]: true
-                            }
-                        }
-
-                        if (viewPortY + 400 > window.innerHeight) {
-                            seatsRefs.current[fieldIndex].style.transform = 'translateY(-100%)';
-                            return {
-                                ...prev,
-                                [index]: true
-                            }
-                        } else {
-                            seatsRefs.current[fieldIndex].style.transform = 'translateY(0)';
-                            return {
-                                ...prev,
-                                [index]: true
-                            }
-                        }
-                    }
-                }
-                return prev
-            })
         }
-    }, [constraintsRef, fields]);
+    }, [fields, update]);
 
     useEffect(() => {
         const changeFloor = async () => {
@@ -391,6 +348,17 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
 
         changeFloor();
     }, [currentFloor, fields]);
+
+    useEffect(() => {
+        const updateTextAreas = () => {
+            document.querySelectorAll('textarea').forEach(textarea => {
+                textarea.style.height = 'auto';
+                textarea.style.height = `${textarea.scrollHeight}px`;
+            });
+        };
+
+        updateTextAreas()
+    }, [])
 
     return (
         <div className="w-full max-w-[1110px] flex flex-col items-center gap-4">
@@ -463,10 +431,11 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                 {mockUPUrl ? (
                     <div>
                         <Image
-                            src={mockUPUrl || ''}
+                            src={typeof mockUPUrl === 'string' && mockUPUrl.startsWith('data') ? mockUPUrl : `http://localhost:3000/${mockUPUrl}`}
                             alt="mockup"
                             fill
                             className={`h-auto w-full rounded-2xl opacity-100`}
+                            quality={50}
                             priority
                         />
                     </div>
@@ -483,18 +452,26 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                                 }
                             }}
                             key={field.id}
-                            className="absolute w-[25px] h-[25px] rounded-full bg-orange-500 outline-2 z-50 cursor-move"
+                            className="absolute w-[25px] h-[25px] rounded-full bg-orange-500 outline-2 z-50 cursor-move transform-gpu"
                             drag
                             whileDrag={{ scale: 0.8, cursor: 'grabbing' }}
                             dragConstraints={constraintsRef}
                             dragTransition={{ power: 0, timeConstant: 0 }}
                             dragMomentum={false}
                             style={{ x: field.x, y: field.y }}
-                            onDragEnd={(event: unknown, info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }) => handleDragElement(info, currentFloor, fieldIndex, field.id)}
                             onDragStart={() => {
                                 setVisibleMenu(prev => ({ ...prev, [field.id]: false }));
+                                setDragging(true);
                             }}
-                            onClick={() => onClickHandler(field.id, fieldIndex)}
+                            onDragEnd={(event: unknown, info: { point: { x: number; y: number }; delta: { x: number; y: number }; velocity: { x: number; y: number } }) => {
+                                handleDragElement(info, currentFloor, fieldIndex)
+                                setDragging(false);
+                            }}
+                            onClick={() => {
+                                if (!dragging) {
+                                    onClickHandler(field.id, fieldIndex)
+                                }
+                            }}
                         >
                         </motion.div>
 
@@ -515,8 +492,8 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                             }}
                             className={`overflow-hidden absolute w-[300px] bg-white rounded-xl ${visibleMenu[field.id] ? 'block z-40' : 'z-30'}`}
                             style={{
-                                left: fields[currentFloor].places[fieldIndex].x,
-                                top: fields[currentFloor].places[fieldIndex].y,
+                                left: fields[currentFloor].places[fieldIndex].x + 10,
+                                top: fields[currentFloor].places[fieldIndex].y + 10,
                             }}
                         >
                             <motion.div
@@ -532,29 +509,38 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                             </motion.div>
 
                             <motion.div
-                                className={`flex flex-col items-center`}
+                                className={`${styles.place_card}`}
                             >
                                 <input
                                     type="text"
-                                    className="text-black text-center"
+                                    className={`${styles.place_heading} text-center`}
                                     {...register(`floors.${currentFloor}.places.${fieldIndex}.name`)}
                                     placeholder={`New seat ${fieldIndex + 1}`}
-
                                 />
 
                                 <textarea
                                     {...register(`floors.${currentFloor}.places.${fieldIndex}.description`)}
-                                    className="text-black"
+                                    onInput={(e) => {
+                                        const target = e.target as HTMLTextAreaElement;
+
+                                        target.style.height = "auto";
+                                        target.style.minHeight = "40px";
+                                        target.style.height = `${target.scrollHeight}px`;
+                                    }}
+                                    className={`${styles.place_description} w-full`}
                                     placeholder={`Description`}
                                 >
 
                                 </textarea>
 
-                                <input
-                                    {...register(`floors.${currentFloor}.places.${fieldIndex}.number_of_seats`)}
-                                    type="number"
-                                    className="text-black"
-                                />
+                                <div className="flex flex-row items-start gap-2">
+                                    <p className="text-black text-left">Мест: </p>
+                                    <input
+                                        {...register(`floors.${currentFloor}.places.${fieldIndex}.number_of_seats`)}
+                                        type="number"
+                                        className="text-black"
+                                    />
+                                </div>
 
                                 <input type="file" className="text-black" onChange={(e) => {
                                     const file = e.target.files?.[0];
@@ -567,7 +553,6 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                                     <div className="relative w-full h-28">
                                         <Image
                                             src={typeof field.image === 'string' ? field.image : URL.createObjectURL(field.image)}
-                                            // src={field.image}
                                             layout="fill"
                                             objectFit="cover"
                                             alt="design"

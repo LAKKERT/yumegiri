@@ -55,7 +55,6 @@ export default function AddMockUP() {
         name: 'floors',
     });
 
-
     function useScrollOverflowMask(scrollXProgress: MotionValue<number>) {
         const left = `0%`
         const right = `100%`
@@ -753,19 +752,17 @@ export default function AddMockUP() {
 
                 <motion.div
                     ref={constraintsRef}
-                    className={`relative mx-auto max-w-[1110px] bg-gray-100`}
+                    className={`relative mx-auto max-w-[1110px]`}
                     style={{ width: 1110, height: fields[currentFloor]?.mockup_height }}
                 >
                     {mockUPUrl ? (
-                        <div>
-                            <Image
-                                src={mockUPUrl || ""}
-                                alt="mockup"
-                                fill
-                                priority
-                                className="h-auto w-full"
-                            />
-                        </div>
+                        <Image
+                            src={mockUPUrl || ""}
+                            alt="mockup"
+                            fill
+                            priority
+                            className="h-auto w-full rounded-2xl"
+                        />
                     ) : (
                         null
                     )}
@@ -792,11 +789,6 @@ export default function AddMockUP() {
                                 }}
                                 onClick={() => onClickHandler(field.id, fieldIndex)}
                             >
-                                <motion.div
-                                    className="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 w-[30px] h-[30px] rounded-full bg-transparent outline-3 outline-orange-500 z-30"
-                                >
-
-                                </motion.div>
                             </motion.div>
 
                             <motion.div

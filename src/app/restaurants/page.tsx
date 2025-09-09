@@ -2,12 +2,14 @@
 import { Header } from "@/app/components/header";
 import { useRestaurants } from "@/lib/hooks/useRestaurants";
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { motion, animate, MotionValue, useMotionValue, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
 import { Floors, Places, Seats } from "@/lib/interfaces/mockup";
 import { Reservation } from "@/lib/interfaces/reservation";
+import { MainInfo } from "@/app/components/restaurant/mainInformation";
 import { RestaurantEditForm, EditRestaurantMockUp } from "@/app/components/restaurant/editRestaurantData";
+import { FloorCounter } from "@/app/components/restaurant/floorCounter";
+import { RestaurantMockUp } from "@/app/components/restaurant/RestaurantMockUp";
 import { saveRestaurantFiles } from '@/helpers/saveImage';
 import { supabase } from "@/db/supabaseConfig";
 import { processData } from "@/helpers/readFiles";
@@ -361,6 +363,10 @@ export default function Restaurants() {
         setIsEditMode(mode);
     }
 
+    const ChangeSeatState = (mode: boolean) => {
+        setSeatIsSelected(mode);
+    }
+
     return (
         <div className="flex justify-center mt-[100px] font-[family-name:var(--font-pacifico)] min-h-[calc(100vh-100px)] bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
             <Header />
@@ -395,7 +401,7 @@ export default function Restaurants() {
                                 setIsBooked(false);
                                 setSeatIsSelected(false);
                             }}
-                            className="cursor-pointer">
+                                className="cursor-pointer">
                                 хорошо
                             </button>
                         </div>
@@ -462,296 +468,18 @@ export default function Restaurants() {
                             </div>
 
                             <div className={`${isEditMode ? 'block' : 'hidden'}`}>
-                                <RestaurantEditForm register={editFormRegister} setValue={setEditFormValue} />
+                                <RestaurantEditForm register={editFormRegister} />
                             </div>
 
-                            <div className="flex flex-row items-center gap-4">
-                                <button
-                                    type="button"
-                                    className="w-[25px] h-[25px] bg-white rounded-full text-black cursor-pointer"
-                                    onClick={prevImageHandler}
-                                >
-                                    &lt;
-                                </button>
-                                <motion.div ref={carouselRef}
-                                    style={{
-                                        maskImage,
-                                        paddingRight: isLastImage ? "" : `${(200 * 2)}px`,
-                                        width: isLastImage ? `250px` : `650px`
-                                    }}
-                                    className={`snap-x scroll-smooth flex flex-row items-center gap-4 overflow-hidden overflow-x-hidden transform transition-all duration-300`}
-                                >
-                                    {isEditMode && selectedImages.length !== 0 ? (
-                                        <AnimatePresence mode='wait'>
-                                            {selectedImages.map((image, index) => (
-                                                <motion.div
-                                                    key={index}
-                                                    id={`image${index}`}
-                                                    className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'} ${order === index ? 'w-[275px] h-[335px]' : 'min-w-[250px] w-[250px] h-[310px]'} rounded-md`}
-                                                    initial={{
-                                                        y: 80,
-                                                        opacity: 0
-                                                    }}
-                                                    exit={{
-                                                        y: -80,
-                                                        opacity: 0,
-                                                        background: '#000'
-                                                    }}
-
-                                                    animate={{
-                                                        y: 0,
-                                                        opacity: 100,
-                                                        background: '#000'
-                                                    }}
-                                                    transition={{
-                                                        duration: .3,
-                                                        ease: "easeInOut"
-                                                    }}
-                                                >
-                                                    <Image
-                                                        src={URL.createObjectURL(selectedImages[index])}
-                                                        alt="restaurant gallery"
-                                                        fill
-                                                        objectFit="cover"
-                                                        className={`rounded-md origin-center`}
-                                                    >
-
-                                                    </Image>
-                                                </motion.div>
-                                            ))}
-                                        </AnimatePresence>
-                                    ) : (
-                                        <AnimatePresence mode='wait'>
-                                            {Array.isArray(currentRestaurant?.gallery) ? (
-                                                currentRestaurant?.gallery.map((image, index) => (
-                                                    <motion.div
-                                                        key={image.id}
-                                                        id={`image${index}`}
-                                                        className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'} ${order === index ? 'w-[275px] h-[335px]' : 'min-w-[250px] w-[250px] h-[310px]'} rounded-md`}
-                                                        initial={{
-                                                            y: 80,
-                                                            opacity: 0
-                                                        }}
-                                                        exit={{
-                                                            y: -80,
-                                                            opacity: 0,
-                                                            background: '#000'
-                                                        }}
-
-                                                        animate={{
-                                                            y: 0,
-                                                            opacity: 100,
-                                                            background: '#000'
-                                                        }}
-                                                        transition={{
-                                                            duration: .3,
-                                                            ease: "easeInOut"
-                                                        }}
-                                                    >
-                                                        <Image
-                                                            src={image.image}
-                                                            alt="restaurant gallery"
-                                                            fill
-                                                            objectFit="cover"
-                                                            className={`rounded-md origin-center`}
-                                                        >
-
-                                                        </Image>
-                                                    </motion.div>
-                                                ))
-                                            ) : (
-                                                null
-                                            )}
-                                        </AnimatePresence>
-                                    )}
-                                </motion.div>
-                                <button
-                                    type="button"
-                                    className="w-[25px] h-[25px] bg-white rounded-full text-black cursor-pointer"
-                                    onClick={nextImageHandler}
-                                >
-                                    &gt;
-                                </button>
-                            </div>
+                            <MainInfo prevImageHandler={prevImageHandler} nextImageHandler={nextImageHandler} carouselRef={carouselRef} maskImage={maskImage} isLastImage={isLastImage} selectedImages={selectedImages} isEditMode={isEditMode} currentRestaurant={currentRestaurant} order={order} />
                         </div>
 
-                        <div className={`flex flex-col items-center gap-4 ${isEditMode ? 'hidden' : ''}`}>
-                            <div className="w-auto h-[70px] flex flex-row items-center justify-center gap-3 bg-white rounded-xl px-4">
-                                <p className="text-black text-xl uppercase">этаж</p>
-                                <AnimatePresence mode='wait'>
-                                    <motion.span
-                                        key={currentFloor}
-                                        initial={{
-                                            y: y.get(),
-                                            opacity: 0,
-                                        }}
-                                        exit={{
-                                            y: y.get(),
-                                            opacity: 0,
-                                        }}
-                                        animate={{
-                                            y: 0,
-                                            opacity: 1,
-                                        }}
-
-                                        transition={{
-                                            duration: .3
-                                        }}
-
-                                        className="inline-block w-[40px] text-black text-center text-4xl uppercase align-text-top pb-2"
-                                    >
-                                        {currentFloor + 1}
-                                    </motion.span>
-                                </AnimatePresence>
-
-                                <span className="text-black text-xl uppercase">из</span>
-                                <span className="inline-block w-[40px] text-black text-center text-4xl uppercase align-text-top pb-2">{maxFloors}</span>
-
-                                <div className="flex flex-row gap-2">
-                                    <button type="button" onClick={prevFloorHandler} disabled={seatsIsSelected ? true : false} className={`relative w-[45px] h-[45px] flex justify-center items-center transform transition-colors ease-in-out duration-300 bg-[#f8845a] hover:bg-[#BF724F] rounded-lg text-3xl cursor-pointer`}>
-                                        <p className="absolute top-0">&lt;</p>
-                                    </button>
-
-                                    <button type="button" onClick={nextFloorHandler} disabled={seatsIsSelected ? true : false} className={`relative w-[45px] h-[45px] flex justify-center items-center bg-[#f8845a] hover:bg-[#BF724F] rounded-lg text-3xl cursor-pointer`}>
-                                        <p className="absolute top-0">&gt;</p>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <motion.div
-                                ref={constraintsRef}
-                                className={`relative mx-auto`}
-                                style={{
-                                    width: 1110,
-                                    height: `${currentRestaurant?.floors[currentFloor].mockup_height}px`
-                                }}
-                            >
-                                <AnimatePresence mode='sync'>
-                                    <motion.div
-                                        key={currentRestaurant?.floors[currentFloor].mockup}
-                                        className={`absolute`}
-                                        initial={{
-                                            scale: 1,
-                                            x: x.get(),
-                                        }}
-                                        exit={{
-                                            scale: .75,
-                                            opacity: 0,
-                                            x: x.get(),
-                                        }}
-                                        animate={{
-                                            scale: 1,
-                                            x: 0
-                                        }}
-                                        style={{
-                                            width: '100%',
-                                            height: '100%',
-                                        }}
-                                        transition={{
-                                            duration: .3,
-                                        }}
-                                    >
-                                        <Image
-                                            src={`http://localhost:3000/${currentRestaurant?.floors[currentFloor].mockup}`}
-                                            alt="mockup"
-                                            fill
-                                            className={`h-auto w-full rounded-2xl opacity-100`}
-                                        />
-                                    </motion.div>
-                                </AnimatePresence>
-
-                                {currentRestaurant && currentRestaurant.floors[currentFloor].places.map((place, placeIndex) => (
-                                    <Controller
-                                        key={place.id}
-                                        name='place_id'
-                                        control={control}
-                                        defaultValue={''}
-                                        render={({ field }) => (
-                                            <motion.div
-                                                key={place.id}>
-                                                <motion.div
-                                                    className={`absolute w-[25px] h-[25px] rounded-full bg-orange-500 outline-2 z-30`}
-                                                    style={{
-                                                        left: `${place.xPer}%`,
-                                                        top: `${place.yPer}%`,
-                                                    }}
-                                                    onClick={() => onClickHandler(place.id, placeIndex)}
-                                                >
-
-                                                </motion.div>
-
-                                                <motion.div
-                                                    ref={(el: HTMLDivElement) => seatsRefs.current[placeIndex] = el}
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{
-                                                        opacity: visibleMenu[place?.id] ? 100 : 0,
-                                                        height: visibleMenu[place?.id] ? 400 : 0,
-                                                    }}
-                                                    transition={{
-                                                        duration: .3
-                                                    }}
-                                                    className={`overflow-hidden absolute w-[300px] bg-white rounded-xl `}
-                                                    style={{
-                                                        left: `${place?.xPer}%`,
-                                                        top: `${place?.yPer}%`,
-                                                    }}
-                                                >
-                                                    <motion.div
-                                                        initial={{ width: '100%' }}
-                                                        transition={{
-                                                            duration: .3
-                                                        }}
-                                                        className={`flex justify-end gap-4 px-2 h-[25px] bg-orange-500`}
-                                                    >
-                                                    </motion.div>
-
-                                                    <motion.div
-                                                        className={`flex flex-col items-center`}
-                                                    >
-                                                        <h3 className="text-black ">{place?.name}</h3>
-
-                                                        <p className="text-black">{place?.description}</p>
-
-                                                        <p className="text-black">{place?.number_of_seats}</p>
-
-                                                        <div className="relative w-full h-28">
-                                                            <Image
-                                                                src={`http://localhost:3000/${place?.image}`}
-                                                                alt="design"
-                                                                layout="fill"
-                                                                objectFit="cover"
-                                                            />
-                                                        </div>
-                                                    </motion.div>
-
-                                                    {place?.status ? (
-                                                        <p className="text-black">Столик занят</p>
-                                                    ) : (
-                                                        <button
-                                                            className="text-black cursor-pointer"
-                                                            type="button"
-                                                            disabled={seatsIsSelected ? true : false}
-                                                            onClick={() => {
-                                                                field.onChange(place?.id);
-                                                                setSeatIsSelected(true);
-                                                            }}
-                                                        >
-                                                            Выбрать
-                                                        </button>
-                                                    )}
-                                                </motion.div>
-                                            </motion.div>
-                                        )}
-                                    >
-                                    </Controller>
-                                ))}
-                            </motion.div>
-                        </div>
+                        <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} seatsIsSelected={seatsIsSelected} isEditMode={isEditMode} y={y} />
 
                         {isEditMode && currentRestaurant ? (
-                            <EditRestaurantMockUp restaurantDetail={currentRestaurant} register={editFormRegister} fields={fields} append={append} remove={remove} update={update} replace={replace} maxFloors={maxFloors} />
+                            <EditRestaurantMockUp restaurantDetail={currentRestaurant} register={editFormRegister} fields={fields} append={append} remove={remove} update={update} replace={replace} />
                         ) : (
-                            null
+                            <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} currentFloor={currentFloor} seatsIsSelected={seatsIsSelected} control={control} seatsRefs={seatsRefs} visibleMenu={visibleMenu} x={x} ChangeSeatState={ChangeSeatState} onClickHandler={onClickHandler} />
                         )}
 
                         <button type="submit" className={`cursor-pointer ${isEditMode ? '' : 'hidden'}`}>

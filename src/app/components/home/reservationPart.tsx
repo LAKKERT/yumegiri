@@ -64,7 +64,7 @@ export function ReservationPart() {
             </div>
 
             <motion.div 
-                className={`z-10`}
+                className={`z-10 [text-shadow:0_4px_4px_rgb(0_0_0_/_0.5)]`}
                 style={{
                     pointerEvents: pointerEvents
                 }}

@@ -16,8 +16,6 @@ export default function Home() {
     const scale = useTransform(scrollYProgress, [0, 0.1], [1, 1.5]);
     const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
 
-    console.log()
-
     return (
         <div className={`h-[2500px] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent`}>
             <Header />

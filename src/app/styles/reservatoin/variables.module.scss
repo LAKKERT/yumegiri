@@ -101,3 +101,45 @@
     transition-duration: .3s;
     background-color: oklch(63.232% 0.1681 21.911);;
 }
+
+.orange_button {
+    width: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ff8f66;
+    border: 2px solid #ff8f66;
+    border-radius: 8px;
+
+    color: black;
+
+    transition: ease-in-out;
+    transition-duration: .3s;
+}
+
+.orange_button:active {
+    background-color: black;
+    color: #ff8f66;
+    transition: ease-in-out;
+    transition-duration: .3s;
+}
+
+.place_card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0px 8px;
+    gap: 8px;
+}
+
+.place_heading {
+    font-size: 20px;
+    color: black;
+    text-wrap: wrap;
+}
+
+.place_description {
+    font-size: 18px;
+    color: black;
+    text-wrap: wrap;
+}

@@ -5,7 +5,7 @@ import { MenuList } from "@/app/components/menu/menuList";
 import { DishDetail } from "../components/menu/dishDetail";
 import { EditDish } from "../components/menu/editDish";
 import { useEffect, useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/db/supabaseConfig";
@@ -101,7 +101,7 @@ export default function Menu() {
                         <div className={`w-full flex flex-row justify-end gap-4 z-50`}>
                             <button
                                 className={`uppercase cursor-pointer ${userRole === 'admin' ? '' : 'hidden'}`}
-                                onClick={() => {setEditMode(true)}}
+                                onClick={() => { setEditMode(true) }}
                             >
                                 Редактировать
                             </button>
@@ -138,11 +138,11 @@ export default function Menu() {
 
                     <div className="w-full">
                         <div className="flex gap-4">
-                            <button type="button" className="cursor-pointer" 
-                            onClick={() => {
-                                setDeleteMode(prev => !prev)
-                                setDeleteDishes([]);
-                            }}
+                            <button type="button" className="cursor-pointer"
+                                onClick={() => {
+                                    setDeleteMode(prev => !prev)
+                                    setDeleteDishes([]);
+                                }}
                             >
                                 ВЫБРАТЬ БЛЮДА ДЛЯ УДАЛЕНИЯ
                             </button>
