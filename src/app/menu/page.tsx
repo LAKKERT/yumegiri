@@ -14,7 +14,7 @@ import { useCategories } from "@/lib/hooks/useCategories";
 import { useCheckUserRole } from "@/lib/hooks/useCheckRole";
 
 export default function Menu() {
-    const { userRole } = useCheckUserRole();
+    const [userRole, setUserRole] = useState<string>("");
     const [dishesData, setDishesData] = useState<Dishes[]>([]);
     const { categories } = useCategories();
     const [filteredCategories, setFilteredCategories] = useState<Categories[]>([]);
@@ -26,6 +26,16 @@ export default function Menu() {
     const [showDetailIndex, setShowDetailIndex] = useState<number | null>(null);
 
     useEffect(() => {
+
+        const getUserRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            const userRole = await user?.user_metadata?.user_role || (await supabase.auth.getClaims()).data?.claims.user_role
+            console.log(await supabase.auth.getClaims())
+            if (userRole) {
+                setUserRole(userRole);
+            }
+        }
+
         const getDishes = async () => {
             try {
                 if (process.env.NEXT_PUBLIC_ENV === 'production') {
@@ -59,6 +69,7 @@ export default function Menu() {
             }
         }
 
+        getUserRole();
         getDishes();
     }, [])
 
@@ -100,7 +111,7 @@ export default function Menu() {
                     >
                         <div className={`w-full flex flex-row justify-end gap-4 z-50`}>
                             <button
-                                className={`uppercase cursor-pointer ${userRole === 'admin' ? '' : 'hidden'}`}
+                                className={`uppercase cursor-pointer ${userRole === 'admin' || userRole === 'waiter' ? '' : 'hidden'}`}
                                 onClick={() => { setEditMode(true) }}
                             >
                                 Редактировать

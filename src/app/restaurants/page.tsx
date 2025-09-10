@@ -18,7 +18,7 @@ import styles from '@/app/styles/reservatoin/variables.module.scss';
 import { RestaurantToolBar } from '@/app/components/restaurant/toolBar';
 
 export default function Restaurants() {
-    const { userRole } = useCheckUserRole();
+    const [userRole, setUserRole] = useState<string>("");
 
     const { control, register, handleSubmit, formState: { errors }, reset, setValue } = useForm<Reservation>();
     const { control: editFormControl, register: editFormRegister, handleSubmit: editFormSubmit, formState: { editFormErrors }, reset: resetEditForm, setValue: setEditFormValue } = useForm<Places>({
@@ -61,6 +61,17 @@ export default function Restaurants() {
     const y = useMotionValue(0);
 
     useEffect(() => {
+
+        const getUserRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            const userRole = await user?.user_metadata?.user_role || (await supabase.auth.getClaims()).data?.claims.user_role
+            console.log((await supabase.auth.getClaims()))
+            if (userRole) {
+                setUserRole(userRole);
+            }
+        }
+
+        getUserRole();
         setCurrentRestaurant(restaurants[0]);
         setMaxFloors(restaurants[0]?.floors.length);
     }, [restaurants]);
@@ -371,7 +382,7 @@ export default function Restaurants() {
         <div className="flex justify-center mt-[100px] font-[family-name:var(--font-pacifico)] min-h-[calc(100vh-100px)] bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
             <Header />
             <div className="flex flex-col items-center">
-                {userRole === 'admin' ? (
+                {userRole === 'admin' || userRole === 'waiter' ? (
                     <RestaurantToolBar changeEditMode={changeEditMode} restaurantId={currentRestaurant?.id} />
                 ) : (
                     null
