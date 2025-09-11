@@ -44,7 +44,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className="scroll-smooth">
+        <html lang="en" className="scroll-smooth no-touch">
             <body
                 className={`${pacifico.variable} ${kiwimaru.variable} ${marck.variable} ${klee.variable} ${arimo.variable} antialiased`}
             >

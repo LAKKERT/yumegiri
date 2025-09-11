@@ -3,7 +3,7 @@
 import { ChangeEvent, useRef, useState, useCallback, useEffect } from "react";
 import styles from '@/app/styles/reservatoin/variables.module.scss';
 import { Places } from "@/lib/interfaces/mockup";
-import { FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove, UseFieldArrayReplace, UseFieldArrayUpdate, UseFormRegister, UseFormSetValue } from "react-hook-form";
+import { FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove, UseFieldArrayReplace, UseFieldArrayUpdate, UseFormRegister } from "react-hook-form";
 import { AnimatePresence, motion, useMotionValue } from "motion/react";
 import Image from "next/image";
 import { v4 as uuidv4 } from 'uuid';
@@ -220,37 +220,53 @@ export function EditRestaurantMockUp({ restaurantDetail, register, fields, appen
                 }
             } else {
                 if (seatsRefs.current[placeIndex]) {
+                    seatsRefs.current[placeIndex].style.transform = 'translate(0, 0)'; // Сбросс позиции
+
                     const container = constraintsRef.current?.getBoundingClientRect();
                     const space = seatsRefs.current[placeIndex].getBoundingClientRect();
 
-                    console.log(`place: ${space.left} ${space.top} ${space.right} ${space.bottom} ${space.width} ${space.height}`);
-
                     if (container && space) {
-                        if (space.right + space.width > (container.left + container.right) && (space.top + 400) > window.innerHeight) {
-                            seatsRefs.current[placeIndex].style.transform = 'translate(-100%, -100%)';
-                            return {
-                                ...prev,
-                                [index]: !prev[index]
-                            }
-                        }
+                        const spaceOnTop = space.top > 400  // Заходит ли меню за пределы верхней стороны
+                        const spaceOnBottom = space.top + 400 < window.innerHeight; // Заходит ли меню за пределы нижней стороны
+                        const spaceOnRight = space.right < window.innerWidth; // Заходит ли меню за пределы правой стороны
 
-                        if (space.top + 400 > window.innerHeight) {
-                            seatsRefs.current[placeIndex].style.transform = 'translateY(-100%)';
-                            return {
-                                ...prev,
-                                [index]: !prev[index]
-                            }
-                        } else {
-                            seatsRefs.current[placeIndex].style.transform = 'translateY(0)';
+                        if (!spaceOnTop && !spaceOnRight) {
+                            seatsRefs.current[placeIndex].style.transform = 'translateX(-100%)';
                             return {
                                 ...prev,
                                 [index]: !prev[index]
                             }
                         }
-                    } else {
-                        return {
-                            ...prev,
-                            [index]: !prev[index]
+                        else if (!spaceOnBottom) {
+                            if (!spaceOnRight) {
+                                seatsRefs.current[placeIndex].style.transform = 'translate(-100%, -100%)'
+                                return {
+                                    ...prev,
+                                    [index]: !prev[index]
+                                }
+                            }
+
+                            seatsRefs.current[placeIndex].style.transform = 'translateY(-100%)'
+                            return {
+                                ...prev,
+                                [index]: !prev[index]
+                            }
+                        }
+                        else {
+                            if (spaceOnRight) {
+                                seatsRefs.current[placeIndex].style.transform = 'translate(0%, 0%)'
+                                return {
+                                    ...prev,
+                                    [index]: !prev[index]
+                                }
+                            }
+                            else {
+                                seatsRefs.current[placeIndex].style.transform = 'translate(-100%, 0%)'
+                                return {
+                                    ...prev,
+                                    [index]: !prev[index]
+                                }
+                            }
                         }
                     }
                 }

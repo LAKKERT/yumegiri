@@ -18,7 +18,7 @@ import styles from '@/app/styles/reservatoin/variables.module.scss';
 import { RestaurantToolBar } from '@/app/components/restaurant/toolBar';
 
 export default function Restaurants() {
-    const [userRole, setUserRole] = useState<string>("");
+    const { userRole } = useCheckUserRole();
 
     const { control, register, handleSubmit, formState: { errors }, reset, setValue } = useForm<Reservation>();
     const { control: editFormControl, register: editFormRegister, handleSubmit: editFormSubmit, formState: { editFormErrors }, reset: resetEditForm, setValue: setEditFormValue } = useForm<Places>({
@@ -61,17 +61,6 @@ export default function Restaurants() {
     const y = useMotionValue(0);
 
     useEffect(() => {
-
-        const getUserRole = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            const userRole = await user?.user_metadata?.user_role || (await supabase.auth.getClaims()).data?.claims.user_role
-            console.log((await supabase.auth.getClaims()))
-            if (userRole) {
-                setUserRole(userRole);
-            }
-        }
-
-        getUserRole();
         setCurrentRestaurant(restaurants[0]);
         setMaxFloors(restaurants[0]?.floors.length);
     }, [restaurants]);
@@ -167,7 +156,7 @@ export default function Restaurants() {
         setMaxFloors(restaurants[restaurantIndex]?.floors.length);
     }
 
-    const onClickHandler = (index: string, placeIndex: number) => {
+        const onClickHandler = (index: string, placeIndex: number) => {
         setVisibleMenu((prev) => {
             if (prev[index] === true) {
                 return {
@@ -175,37 +164,58 @@ export default function Restaurants() {
                     [index]: !prev[index]
                 }
             } else {
-                const container = constraintsRef.current?.getBoundingClientRect();
-                const space = seatsRefs.current[placeIndex]?.getBoundingClientRect();
+                if (seatsRefs.current[placeIndex]) {
+                    seatsRefs.current[placeIndex].style.transform = 'translate(0, 0)'; // Сбросс позиции
 
-                if (container && space) {
-                    if (space.right + space.width > (container.left + container.right) && (space.top + 400) > window.innerHeight) {
-                        seatsRefs.current[placeIndex].style.transform = 'translate(-100%, -100%)';
-                        return {
-                            ...prev,
-                            [index]: !prev[index]
-                        }
-                    }
+                    const container = constraintsRef.current?.getBoundingClientRect();
+                    const space = seatsRefs.current[placeIndex].getBoundingClientRect();
 
-                    if (space.top + 400 > window.innerHeight) {
-                        seatsRefs.current[placeIndex].style.transform = 'translateY(-94%)';
-                        return {
-                            ...prev,
-                            [index]: !prev[index]
+                    if (container && space) {
+                        const spaceOnTop = space.top > 400  // Заходит ли меню за пределы верхней стороны
+                        const spaceOnBottom = space.top + 400 < window.innerHeight; // Заходит ли меню за пределы нижней стороны
+                        const spaceOnRight = space.right < window.innerWidth; // Заходит ли меню за пределы правой стороны
+
+                        if (!spaceOnTop && !spaceOnRight) {
+                            seatsRefs.current[placeIndex].style.transform = 'translate(calc(-100% + 10px), 10px)';
+                            return {
+                                ...prev,
+                                [index]: !prev[index]
+                            }
                         }
-                    } else {
-                        seatsRefs.current[placeIndex].style.transform = 'translateY(0)';
-                        return {
-                            ...prev,
-                            [index]: !prev[index]
+                        else if (!spaceOnBottom) {
+                            if (!spaceOnRight) {
+                                seatsRefs.current[placeIndex].style.transform = 'translate(calc(-100% + 10px), calc(-100% + 10px))'
+                                return {
+                                    ...prev,
+                                    [index]: !prev[index]
+                                }
+                            }
+
+                            seatsRefs.current[placeIndex].style.transform = 'translate(10px, calc(-100% + 10px))'
+                            return {
+                                ...prev,
+                                [index]: !prev[index]
+                            }
                         }
-                    }
-                } else {
-                    return {
-                        ...prev,
-                        [index]: !prev[index]
+                        else {
+                            if (spaceOnRight) {
+                                seatsRefs.current[placeIndex].style.transform = 'translate(0%, 0%)'
+                                return {
+                                    ...prev,
+                                    [index]: !prev[index]
+                                }
+                            }
+                            else {
+                                seatsRefs.current[placeIndex].style.transform = 'translate(calc(-100% + 10px), 10px)'
+                                return {
+                                    ...prev,
+                                    [index]: !prev[index]
+                                }
+                            }
+                        }
                     }
                 }
+                return prev
             }
         })
     }

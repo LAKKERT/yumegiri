@@ -147,7 +147,6 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
                                         </button>
                                     )}
                                 </motion.div>
-
                             </motion.div>
                         </motion.div>
                     )}

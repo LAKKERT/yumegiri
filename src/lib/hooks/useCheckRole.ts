@@ -8,21 +8,16 @@ export function useCheckUserRole() {
     const [userRole, setUserRole] = useState<string>('');
 
     useEffect(() => {
-        const getRoleFunc = async () => {
-            const { data: userData, error } = await supabase.auth.getUser();
-            if (error) console.error(error);
-            else {
-                const { data: role, error } = await supabase
-                    .from("user_roles")
-                    .select("role")
-                    .eq("user_id", userData.user.id)
-                    .single();
-                if (error) console.error(error);
-                else setUserRole(role.role);
+        const getUserRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            const userRole = await user?.user_metadata?.user_role || (await supabase.auth.getClaims()).data?.claims.user_role
+            console.log(await supabase.auth.getClaims())
+            if (userRole) {
+                setUserRole(userRole);
             }
         }
 
-        getRoleFunc();
+        getUserRole();
     }, [])
 
     return { userRole };
