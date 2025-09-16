@@ -60,6 +60,8 @@ export default function Restaurants() {
     const x = useMotionValue(0);
     const y = useMotionValue(0);
 
+    const [isSwitchingFloor, setIsSwitchingFloor] = useState<boolean>(false);
+
     useEffect(() => {
         setCurrentRestaurant(restaurants[0]);
         setMaxFloors(restaurants[0]?.floors.length);
@@ -134,12 +136,14 @@ export default function Restaurants() {
         if (currentFloor + 1 > 1) setCurrentFloor(prev => prev -= 1);
         y.set(20);
         x.set(-1500);
+        setIsSwitchingFloor(true);
     }
 
     const nextFloorHandler = () => {
         if (currentFloor + 1 < maxFloors) setCurrentFloor(prev => prev += 1);
         y.set(-20)
         x.set(1500);
+        setIsSwitchingFloor(true);
     }
 
     const changeRestaurantHandler = (restaurantIndex: number) => {
@@ -156,7 +160,7 @@ export default function Restaurants() {
         setMaxFloors(restaurants[restaurantIndex]?.floors.length);
     }
 
-        const onClickHandler = (index: string, placeIndex: number) => {
+    const onClickHandler = (index: string, placeIndex: number) => {
         setVisibleMenu((prev) => {
             if (prev[index] === true) {
                 return {
@@ -255,7 +259,7 @@ export default function Restaurants() {
                 }
             }
         }
-    }
+    };
 
     const getFileProperties = (files: File[] | File | string | null): string | string[] | null => {
         if (Array.isArray(files)) {
@@ -388,6 +392,11 @@ export default function Restaurants() {
         setSeatIsSelected(mode);
     }
 
+    const changeSwithichFloorHandler = (mode: boolean) => {
+        setIsSwitchingFloor(mode);
+        console.log('Changed mode', mode )
+    }
+
     return (
         <div className="flex justify-center mt-[100px] font-[family-name:var(--font-pacifico)] min-h-[calc(100vh-100px)] bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
             <Header />
@@ -430,7 +439,7 @@ export default function Restaurants() {
                 </motion.div>
 
                 <form onSubmit={editFormSubmit(onSubmitEditForm)}>
-                    <div className={`relative max-w-[1110px] h-full w-full flex flex-col gap-4 items-center px-2`}>
+                    <div className={`relative max-w-[1110px] h-full w-full flex flex-col gap-4 items-center`}>
                         <div className="max-w-[760px] w-full flex flex-col items-center gap-2 py-2 rounded-2xl text-black px-6">
                             <p className="text-lg text-center text-balance text-white uppercase">Выберите ресторан и место на схеме ресторана, которое хотите зарезервировать. <br />И заполните форму.</p>
                             <h3 className="uppercase">рестораны</h3>
@@ -495,12 +504,12 @@ export default function Restaurants() {
                             <MainInfo prevImageHandler={prevImageHandler} nextImageHandler={nextImageHandler} carouselRef={carouselRef} maskImage={maskImage} isLastImage={isLastImage} selectedImages={selectedImages} isEditMode={isEditMode} currentRestaurant={currentRestaurant} order={order} />
                         </div>
 
-                        <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} seatsIsSelected={seatsIsSelected} isEditMode={isEditMode} y={y} />
+                        <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} seatsIsSelected={seatsIsSelected} isEditMode={isEditMode} y={y}/>
 
                         {isEditMode && currentRestaurant ? (
                             <EditRestaurantMockUp restaurantDetail={currentRestaurant} register={editFormRegister} fields={fields} append={append} remove={remove} update={update} replace={replace} />
                         ) : (
-                            <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} currentFloor={currentFloor} seatsIsSelected={seatsIsSelected} control={control} seatsRefs={seatsRefs} visibleMenu={visibleMenu} x={x} ChangeSeatState={ChangeSeatState} onClickHandler={onClickHandler} />
+                            <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} currentFloor={currentFloor} seatsIsSelected={seatsIsSelected} control={control} seatsRefs={seatsRefs} visibleMenu={visibleMenu} x={x} ChangeSeatState={ChangeSeatState} onClickHandler={onClickHandler} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} />
                         )}
 
                         <button type="submit" className={`cursor-pointer ${isEditMode ? '' : 'hidden'}`}>
