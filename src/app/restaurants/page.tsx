@@ -40,9 +40,11 @@ export default function Restaurants() {
     const [currentRestaurant, setCurrentRestaurant] = useState<Places>();
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
+    const [selectedSeat, setSelectedSeat] = useState<string>("");
+    const [seatIsSelected, setSeatIsSelected] = useState<boolean>(false);
+
     const [order, setOrder] = useState<number>(0);
     const [isBooked, setIsBooked] = useState<boolean>(false);
-    const [seatsIsSelected, setSeatIsSelected] = useState<boolean>(false);
     const [isLastImage, setIsLastImage] = useState<boolean>(false);
     const carouselRef = useRef<HTMLDivElement>(null);
     const { scrollXProgress } = useScroll({ container: carouselRef });
@@ -384,18 +386,21 @@ export default function Restaurants() {
         }
     }
 
+    const changeSelectedSeat = (seatID: string) => {
+        setSelectedSeat(seatID);
+    };
+
     const changeEditMode = (mode: boolean) => {
         setIsEditMode(mode);
-    }
+    };
 
     const ChangeSeatState = (mode: boolean) => {
         setSeatIsSelected(mode);
-    }
+    };
 
     const changeSwithichFloorHandler = (mode: boolean) => {
         setIsSwitchingFloor(mode);
-        console.log('Changed mode', mode )
-    }
+    };
 
     return (
         <div className="flex justify-center mt-[100px] font-[family-name:var(--font-pacifico)] min-h-[calc(100vh-100px)] bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
@@ -411,11 +416,11 @@ export default function Restaurants() {
                         backgroundColor: 'transparent'
                     }}
                     animate={{
-                        backgroundColor: seatsIsSelected ? '#0000006c' : 'transparent',
+                        backgroundColor: seatIsSelected ? '#0000006c' : 'transparent',
                     }}
-                    className={`fixed w-full min-h-[calc(100vh-100px)] duration-300 ${seatsIsSelected ? ' z-50' : ''}`}
+                    className={`fixed w-full min-h-[calc(100vh-100px)] duration-300 ${seatIsSelected ? ' z-50' : ''}`}
                 >
-                    <form onSubmit={handleSubmit(onSubmit)} className={`flex flex-col items-center p-4 text-black rounded-2xl text-lg w-[350px] max-h-[420px] bg-[#FFA685] ${seatsIsSelected ? 'z-50' : 'hidden z-0 select-none'} fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isEditMode ? 'hidden' : ''} `}>
+                    <form onSubmit={handleSubmit(onSubmit)} className={`flex flex-col items-center p-4 text-black rounded-2xl text-lg w-[350px] max-h-[420px] bg-[#FFA685] ${seatIsSelected ? 'z-50' : 'hidden z-0 select-none'} fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isEditMode ? 'hidden' : ''} `}>
                         <div className={`w-full text-center flex flex-col gap-4 ${isBooked ? 'hidden' : ''}`}>
                             <button type="button" className="self-start cursor-pointer" onClick={() => setSeatIsSelected(false)}>вернуться</button>
                             <p>Заполните форму</p>
@@ -445,7 +450,7 @@ export default function Restaurants() {
                             <h3 className="uppercase">рестораны</h3>
                             <div className="flex flex-wrap gap-4">
                                 {restaurants.map((restaurant, restaurantIndex) => (
-                                    <button type="button" key={restaurant.id} disabled={seatsIsSelected ? true : false} onClick={() => changeRestaurantHandler(restaurantIndex)} className={`w-[160px] h-[50px] flex items-center justify-center border-2 border-[#ff8f66] bg-[#ff8f66] rounded-lg transform transition-colors duration-300 ease-in-out ${currentRestaurant?.id === restaurant.id ? 'bg-black text-[#ff8f66]' : ''} cursor-pointer`}>
+                                    <button type="button" key={restaurant.id} disabled={seatIsSelected ? true : false} onClick={() => changeRestaurantHandler(restaurantIndex)} className={`w-[160px] h-[50px] flex items-center justify-center border-2 border-[#ff8f66] bg-[#ff8f66] rounded-lg transform transition-colors duration-300 ease-in-out ${currentRestaurant?.id === restaurant.id ? 'bg-black text-[#ff8f66]' : ''} cursor-pointer`}>
                                         <p className="">{restaurant.restaurant_name}</p>
                                     </button>
                                 ))}
@@ -504,12 +509,12 @@ export default function Restaurants() {
                             <MainInfo prevImageHandler={prevImageHandler} nextImageHandler={nextImageHandler} carouselRef={carouselRef} maskImage={maskImage} isLastImage={isLastImage} selectedImages={selectedImages} isEditMode={isEditMode} currentRestaurant={currentRestaurant} order={order} />
                         </div>
 
-                        <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} seatsIsSelected={seatsIsSelected} isEditMode={isEditMode} y={y}/>
+                        <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} seatIsSelected={seatIsSelected} isEditMode={isEditMode} y={y}/>
 
                         {isEditMode && currentRestaurant ? (
                             <EditRestaurantMockUp restaurantDetail={currentRestaurant} register={editFormRegister} fields={fields} append={append} remove={remove} update={update} replace={replace} />
                         ) : (
-                            <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} currentFloor={currentFloor} seatsIsSelected={seatsIsSelected} control={control} seatsRefs={seatsRefs} visibleMenu={visibleMenu} x={x} ChangeSeatState={ChangeSeatState} onClickHandler={onClickHandler} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} />
+                            <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} currentFloor={currentFloor} changeSelectedSeat={changeSelectedSeat} seatIsSelected={seatIsSelected} control={control} seatsRefs={seatsRefs} visibleMenu={visibleMenu} x={x} ChangeSeatState={ChangeSeatState} onClickHandler={onClickHandler} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} />
                         )}
 
                         <button type="submit" className={`cursor-pointer ${isEditMode ? '' : 'hidden'}`}>

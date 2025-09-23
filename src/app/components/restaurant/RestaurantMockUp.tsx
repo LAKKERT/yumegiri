@@ -13,12 +13,16 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { EffectComposer } from "three/examples/jsm/Addons.js";
 import { RenderPass, OutputPass } from "three/examples/jsm/Addons.js";
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
+
 
 interface RestaurantMockUp {
     constraintsRef: RefObject<HTMLDivElement | null>;
     currentRestaurant: Places | undefined;
     currentFloor: number;
-    seatsIsSelected: boolean;
+    changeSelectedSeat: (seatID: string) => void;
+    seatIsSelected: boolean;
     control: Control<Reservation, unknown, Reservation>;
     seatsRefs: RefObject<HTMLDivElement[]>;
     visibleMenu: {
@@ -31,20 +35,25 @@ interface RestaurantMockUp {
     changeSwithichFloorHandler: (mode: boolean) => void;
 }
 
-export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFloor, seatsIsSelected, control, seatsRefs, visibleMenu, x, ChangeSeatState, onClickHandler, isSwitchingFloor, changeSwithichFloorHandler }: RestaurantMockUp) {
+export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFloor, changeSelectedSeat, seatIsSelected, control, seatsRefs, visibleMenu, x, ChangeSeatState, onClickHandler, isSwitchingFloor, changeSwithichFloorHandler }: RestaurantMockUp) {
 
     const aspectRatio = `1110 / ${currentRestaurant?.floors[currentFloor].mockup_height || 600}`;
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [mapFocus, setMapFocus] = useState<boolean>(false);
-    const [seatIsSelected, setSeatIsSelected] = useState<string>('');
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
     const seatsArrayRef = useRef<THREE.Mesh[]>([]);
     const tablesRef = useRef<THREE.Mesh[]>([]);
     const floorZsRef = useRef<number[]>([]);
-    const floorsRef = useRef<THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial, THREE.Object3DEventMap>[]>([]);
+    const floorsRef = useRef<THREE.Group<THREE.Object3DEventMap>[]>([]);
+
+    const preFloorRef = useRef<number>(0);
     const currentFloorRef = useRef<number>(0);
+
+    const preFloorSceneRef = useRef<THREE.Group<THREE.Object3DEventMap> | null>(null);
+    const currentFloorSceneRef = useRef<THREE.Group<THREE.Object3DEventMap> | null>(null);
+
     const [cameraPos, setCameraPos] = useState({ x: 0, y: 0, z: 0 });
 
     const isSwitchingFloorRef = useRef(isSwitchingFloor);
@@ -59,7 +68,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
         isSwitchingFloorRef.current = isSwitchingFloor;
     }, [isSwitchingFloor]);
 
-    const FLOOR_SPACING = 5;
+    const FLOOR_SPACING = 10;
     const DEFAULT_ZOOM = 3;
     const MAP_MOVEMENT_CONSTRAINTS = { minX: -1.5, maxX: 1.5, minY: -1.5, maxY: 1.5 };
 
@@ -125,6 +134,13 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
         const scene = sceneRef.current;
         const camera = cameraRef.current;
 
+        const axesHelper = new THREE.AxesHelper(15);
+        scene.add(axesHelper);
+
+        const stats = new Stats();
+        stats.showPanel(0)
+        document.body.appendChild(stats.dom);
+
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
         renderer.setClearColor(0x000000, 0);
@@ -132,6 +148,8 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.NoToneMapping;
         renderer.toneMappingExposure = 1.0;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         containerRef.current.appendChild(renderer.domElement);
 
         zoomScale.current = 5
@@ -156,8 +174,8 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
         if (outlinePass) {
             outlinePass.edgeStrength = 5;
             outlinePass.edgeGlow = 0;
-            outlinePass.visibleEdgeColor.set(0xae3d3d);
-            outlinePass.hiddenEdgeColor.set(0xae3d3d);
+            outlinePass.visibleEdgeColor.set(0xffffff);
+            outlinePass.hiddenEdgeColor.set(0xffffff);
         }
 
         function onPointerMove(e: MouseEvent) {
@@ -183,42 +201,48 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
         window.addEventListener("wheel", ScaleMapHandler);
         window.addEventListener("pointermove", onPointerMove);
 
-        camera.position.z = 5;
+        camera.position.z = 10;
 
         const animate = () => {
+            stats.begin();
 
             raycaster.setFromCamera(pointer, camera);
             const intersects = raycaster.intersectObjects(scene.children, true);
 
             const selectedObjects: THREE.Object3D[] = [];
 
+
             for (let i = 0; i < intersects.length; i++) {
                 const obj = intersects[i].object;
 
                 if (obj.parent instanceof THREE.Group) {
                     const objParent = obj.parent.children;
-                      
+
                     for (let i = 0; i < objParent.length; i++) {
-                        if (objParent[i] instanceof THREE.Mesh && objParent[i].name.startsWith('Table')) {
+                        if (objParent[i] instanceof THREE.Mesh && objParent[i].name.startsWith('Table') && (currentFloorRef.current === obj.parent.userData.floorIndex)) {
                             if (isClick.current) {
                                 if (obj.parent.userData.TableID) {
-                                    setSeatIsSelected(obj.parent.userData.TableID);
+                                    changeSelectedSeat(obj.parent.userData.TableID);
                                 }
+                                ChangeSeatState(true);
                             }
                             selectedObjects.push(objParent[i]);
                         }
                     }
-
                 }
             }
 
-            if (isSwitchingFloorRef.current && currentFloorRef.current && floorZsRef.current && floorsRef.current) {
+            if (isSwitchingFloorRef.current && currentFloorSceneRef && preFloorSceneRef) {
                 isZooming.current = false;
                 zoomScale.current = 3;
 
+                const preFloor = preFloorSceneRef.current;
+                const nextFloor = currentFloorSceneRef.current;
+
                 const floor = currentFloorRef.current;
-                const targetZ = floorZsRef.current[floor - 1] + 5;
+                const targetZ = floorZsRef.current[floor] + 10;
                 const floorDistanceDiff = targetZ - camera.position.z;
+
                 camera.position.z += floorDistanceDiff * 0.025
 
                 const zoomDiff = DEFAULT_ZOOM - camera.zoom;
@@ -230,18 +254,23 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
                 camera.position.x += cameraPositionDiffX * .05;
                 camera.position.y += cameraPositionDiffY * .05;
 
-                scene.traverse((child) => {
-                    if (child instanceof THREE.Mesh && child.geometry instanceof THREE.PlaneGeometry) {
-                        const meshFloorIndex = child.userData.floorIndex;
-                        const mat = child.material as THREE.MeshBasicMaterial;
-
-                        if (meshFloorIndex === currentFloorRef.current - 1) {
-                            mat.opacity = Math.min(1, mat.opacity + 0.009);
-                        } else {
-                            mat.opacity = Math.max(0, mat.opacity - 0.009);
-                        }
+                currentFloorSceneRef.current?.traverse((child) => {
+                    if (child instanceof THREE.Mesh) {
+                        const material = child.material as THREE.MeshStandardMaterial;
+                        material.transparent = true;
+                        material.opacity = Math.min(1, material.opacity + 0.009);
+                        material.needsUpdate = true;
                     }
-                })
+                });
+
+                preFloorSceneRef.current?.traverse((child) => {
+                    if (child instanceof THREE.Mesh) {
+                        const material = child.material as THREE.MeshStandardMaterial;
+                        material.transparent = true;
+                        material.opacity = Math.max(0, material.opacity - 0.009);
+                        material.needsUpdate = true;
+                    }
+                });
 
                 if (Math.abs(floorDistanceDiff) < 0.005) {
                     camera.position.z = targetZ;
@@ -276,6 +305,8 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
                 renderer.render(scene, camera);
             }
 
+            stats.end();
+
             requestAnimationFrame(animate);
         };
 
@@ -283,6 +314,11 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
         return () => {
             renderer.dispose();
+            
+            if (stats) {
+                document.body.removeChild(stats.dom);
+            }
+
             if (containerRef.current && renderer.domElement.parentNode) {
                 containerRef.current.removeChild(renderer.domElement);
             }
@@ -302,19 +338,36 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
             window.removeEventListener("mousedown", mouseDownHandler);
             window.removeEventListener("mouseup", mouseUpHandler);
             window.removeEventListener("mousemove", mouseMoveHandler);
-        }
+        };
     }, [scrollOff, mouseDownHandler, mouseUpHandler, mouseMoveHandler]);
 
     // Инициализирование сцены и посадочных мест
     useEffect(() => {
         if (!currentRestaurant || !sceneRef.current || !containerRef.current) return;
 
-        floorsRef.current = [];
+        let isMounted = true;
+
         floorZsRef.current = [];
 
         const scene = sceneRef.current;
-
         const loader = new GLTFLoader();
+
+        const disposeScene = (object: THREE.Object3D) => {
+            object.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.geometry?.dispose()
+                    if (child.material instanceof THREE.Material) {
+                        child.material.dispose();
+                    } else if (Array.isArray(child.material)) {
+                        child.material.forEach((material) => material.dispose());
+                    }
+                    if (child.material.map) child.material.map.dispose();
+                }
+            });
+            scene.remove(object);
+        }
+
+        const loadedFloors: THREE.Group[] = [];
 
         function dumpObject(obj: THREE.Mesh, lines: string[] = [], isLast = true, prefix = '') {
             const localPrefix = isLast ? '└─' : '├─';
@@ -326,91 +379,217 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
             obj.children.forEach((child, ndx) => {
                 const isLast = ndx === lastNds;
                 dumpObject(child, lines, isLast, newPrefix);
-
             });
             return lines;
         }
 
+        const lightAreaWidth = 10;
+        const lightAreaHight = 10;
+        const intensity = 3;
+        const LightAreaColor = 0xFFA666;
+
+        const directionalLight = new THREE.DirectionalLight(LightAreaColor, intensity);
+        directionalLight.position.set(-4.5, 4, -0.3);
+        directionalLight.target.position.set(-0.3, 2.75, -10);
+
+        // Настройка теней
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.1;
+        directionalLight.shadow.camera.far = 50;
+        directionalLight.shadow.camera.left = -20;
+        directionalLight.shadow.camera.right = 20;
+        directionalLight.shadow.camera.top = 20;
+        directionalLight.shadow.camera.bottom = -20;
+        directionalLight.shadow.bias = -0.0001;
+        directionalLight.shadow.normalBias = 0.05;
+        directionalLight.shadow.radius = 4;
+        directionalLight.shadow.blurSamples = 10;
+
+        scene.add(directionalLight);
+        scene.add(directionalLight.target);
+
+        const ambientLight = new THREE.AmbientLight(0x4c3c18, 0.5);
+        scene.add(ambientLight);
+
+        const dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 5);
+        scene.add(dirLightHelper);
+
+        const cameraHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
+
+        const gui = new GUI();
+        gui.add(directionalLight, 'intensity', 0, 10, 0.01);
+
+        const onChange = () => {
+
+            directionalLight.target.updateMatrixWorld();
+            dirLightHelper.update();
+
+        };
+
+        onChange();
+
+        function makeXYZGUI(gui, vector3, name, onChangeFn) {
+
+            const folder = gui.addFolder(name);
+            folder.add(vector3, 'x', - 10, 10).onChange(onChangeFn);
+            folder.add(vector3, 'y', 0, 10).onChange(onChangeFn);
+            folder.add(vector3, 'z', - 10, 10).onChange(onChangeFn);
+            folder.open();
+
+        }
+
+        makeXYZGUI(gui, directionalLight.position, 'position', onChange);
+        makeXYZGUI(gui, directionalLight.target.position, 'target', onChange);
+
+
         let tables: THREE.Object3D | null = null;
-
-        loader.load('Restaurant.glb', function (gltf) {
-            scene.add(gltf.scene);
-
-            tables = gltf.scene.getObjectByName('Tables');
-
-            gltf.scene.traverse((child) => {
-                if (child instanceof THREE.Mesh) {
-                    child.material.transparent = true;
-                    child.material.opacity = 1;
-                    child.material.needsUpdate = true;
-                }
-            });
-
-            gltf.scene.rotateX(1.57 / 2);
-            gltf.scene.rotateY(1.57 / 2);
-            gltf.scene.position.set(0, 0, -10);
-
-            const lightAreaWidth = 10;
-            const lightAreaHight = 10;
-            const intensity = 3;
-            const LightAreaColor = 0xFFA666;
-            const lightArea = new THREE.RectAreaLight(LightAreaColor, intensity, lightAreaWidth, lightAreaHight);
-            lightArea.position.set(0, 4, 0);
-            lightArea.lookAt(0, 0, 0);
-            gltf.scene.add(lightArea);
-
-            const floorZ = floorZsRef.current[currentFloor] || 0;
-
-            if (tables && 'children' in tables) {
-                const tableCount = tables.children.length;
-                currentRestaurant.floors[currentFloor]?.places.forEach((place, placeInd) => {
-                    if (placeInd < tableCount && tables !== null && tables.children[placeInd] instanceof THREE.Object3D) {
-                        const table = tables.children[placeInd];
-                        
-                        tables.children[placeInd].userData.TableID = place.id;
-
-                        const worldPosition = new THREE.Vector3();
-                        table.getWorldPosition(worldPosition);
-                    }
-                });
-            }
-        }, undefined, function (error) {
-            console.error(error);
-        });
-
-        const TextureLoader = new THREE.TextureLoader();
-        let distanceToNextFloorZ = 0;
+        let walls: THREE.Object3D | null = null;
+        let distanceToNextFloorZ = -10;
 
         currentRestaurant.floors.forEach((floor, floorIndex) => {
-            const floorMockUP = currentRestaurant.floors[floorIndex].mockup;
-            const mockUPWidthPx = currentRestaurant.floors[floorIndex].mockup_width;
-            const mockUPHeightPx = currentRestaurant.floors[floorIndex].mockup_height;
 
-            const mockUP = TextureLoader.load(`${floorMockUP}`);
-            mockUP.colorSpace = THREE.SRGBColorSpace;
-            const geometry = new THREE.PlaneGeometry(16 / 3, 9 / 3);
-            const material = new THREE.MeshBasicMaterial({ map: mockUP, side: THREE.DoubleSide, transparent: true, opacity: 0 });
+            const currentZ = distanceToNextFloorZ;
 
-            if (floorIndex === 0) {
-                material.opacity = 1;
-            } else {
-                material.opacity = 0;
-            }
+            loader.load('Restaurant.glb', function (gltf) {
+                if (!isMounted) return;
 
-            const plane = new THREE.Mesh(geometry, material);
-            plane.userData.floorIndex = floorIndex;
-            plane.position.set(2 * floorIndex, 0, distanceToNextFloorZ);
-            floorsRef.current[floorIndex] = plane;
+                const sceneModal = gltf.scene;
+                sceneModal.userData.floorIndex = floorIndex;
 
-            floorZsRef.current[floorIndex] = distanceToNextFloorZ;
+                floorsRef.current[floorIndex] = sceneModal;
+                loadedFloors.push(sceneModal);
+
+                scene.add(sceneModal);
+
+                sceneModal.traverse((child) => {
+                    if (child instanceof THREE.Mesh) {
+                        const material = child.material as THREE.MeshStandardMaterial;
+                        material.side = THREE.FrontSide;
+                        material.transparent = true;
+                        material.opacity = (floorIndex === currentFloorRef.current) ? 1 : 0;
+                        material.needsUpdate = true;
+
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                tables = sceneModal.getObjectByName('Tables');
+                walls = sceneModal.getObjectByName('Walls');
+
+                if (tables) {
+                    let placeIndex = 0;
+                    const places = currentRestaurant.floors[0].places;
+                    tables.traverse((child) => {
+                        // if (child instanceof THREE.Mesh) {
+                        //     child.castShadow = true;
+                        //     child.receiveShadow = true;
+                        // }
+
+                        // Выставления ID для мест
+
+                        if (child instanceof THREE.Group) {
+                            child.userData.floorIndex = floorIndex;
+                            //     if (!places[placeIndex].id) return;
+                            //     const tableID = floor.places[placeIndex].id
+
+                            //     child.userData.TableID = tableID;
+                            //     placeIndex++;
+                        }
+                    })
+                }
+
+                if (walls instanceof THREE.Object3D) {
+                    const wallsChildrenGroups = walls.children;
+                    for (const wallChildren of wallsChildrenGroups) {
+                        if (wallChildren instanceof THREE.Group) {
+                            for (const wall of wallChildren.children) {
+                                if (wall instanceof THREE.Mesh) {
+                                    wall.castShadow = true;
+                                    wall.receiveShadow = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                console.log(dumpObject(sceneModal).join('\n'));
+
+                if (tables instanceof THREE.Object3D) {
+                    tables.traverse((child) => {
+                        if (child instanceof THREE.Mesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                }
+
+                sceneModal.rotateX(1.57 / 2);
+                sceneModal.rotateY(1.57 / 2);
+
+                sceneModal.position.set(0, 0, currentZ);
+
+                const floorZ = floorZsRef.current[currentFloor] || 0;
+
+            }, undefined, function (error) {
+                console.error(error);
+            });
+
+            floorZsRef.current[floorIndex] = currentZ;
             distanceToNextFloorZ -= FLOOR_SPACING;
         });
 
-        currentFloorRef.current = currentFloor + 1;
+        return () => {
+            isMounted = false;
 
-        seatsArrayRef.current.forEach(seat => scene.remove(seat));
-        seatsArrayRef.current.length = 0;
-    }, [currentFloor, currentRestaurant]);
+            loadedFloors.forEach(disposeScene);
+            loadedFloors.length = 0;
+
+            floorsRef.current = [];
+            floorZsRef.current = [];
+
+            scene.remove(directionalLight);
+            scene.remove(directionalLight.target);
+            scene.remove(ambientLight);
+            scene.remove(dirLightHelper);
+            scene.remove(cameraHelper);
+
+            dirLightHelper.dispose();
+            cameraHelper.dispose();
+
+            gui.destroy();
+        }
+
+    }, [currentRestaurant]);
+
+    useEffect(() => {
+        preFloorRef.current = currentFloorRef.current;
+
+        currentFloorRef.current = currentFloor;
+
+
+        if ((currentFloor || currentFloor === 0) && floorsRef) {
+            preFloorSceneRef.current = floorsRef.current[preFloorRef.current];
+            currentFloorSceneRef.current = floorsRef.current[currentFloorRef.current];
+
+            if (currentFloorSceneRef.current && preFloorSceneRef.current) {
+                currentFloorSceneRef.current.traverse((child) => {
+                    if (child instanceof THREE.Mesh) {
+                        child.castShadow = true;
+                    }
+                })
+
+                preFloorSceneRef.current.traverse((child) => {
+                    if (child instanceof THREE.Mesh) {
+                        child.castShadow = false;
+                    }
+                })
+            }
+        }
+
+    }, [currentRestaurant, currentFloor])
 
     return (
         <motion.div
@@ -561,7 +740,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
                                         <button
                                             className={`${styles.orange_button}`}
                                             type="button"
-                                            disabled={seatsIsSelected ? true : false}
+                                            disabled={seatIsSelected ? true : false}
                                             onClick={() => {
                                                 field.onChange(place?.id);
                                                 ChangeSeatState(true);
