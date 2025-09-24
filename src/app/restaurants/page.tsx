@@ -512,7 +512,7 @@ export default function Restaurants() {
                         <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} seatIsSelected={seatIsSelected} isEditMode={isEditMode} y={y}/>
 
                         {isEditMode && currentRestaurant ? (
-                            <EditRestaurantMockUp restaurantDetail={currentRestaurant} register={editFormRegister} fields={fields} append={append} remove={remove} update={update} replace={replace} />
+                            <EditRestaurantMockUp restaurantDetail={currentRestaurant} register={editFormRegister} fields={fields} append={append} remove={remove} update={update} replace={replace} isSwitchingFloor={isSwitchingFloor} />
                         ) : (
                             <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} currentFloor={currentFloor} changeSelectedSeat={changeSelectedSeat} seatIsSelected={seatIsSelected} control={control} seatsRefs={seatsRefs} visibleMenu={visibleMenu} x={x} ChangeSeatState={ChangeSeatState} onClickHandler={onClickHandler} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} />
                         )}

@@ -1,7 +1,6 @@
 "use client";
 
 import { Control, Controller } from "react-hook-form";
-import Script from 'next/script';
 import Image from "next/image";
 import * as THREE from "three";
 import { motion, AnimatePresence, MotionValue } from "framer-motion";
@@ -452,7 +451,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
             const currentZ = distanceToNextFloorZ;
 
-            loader.load('Restaurant.glb', function (gltf) {
+            loader.load('/Restaurant.glb', function (gltf) {
                 if (!isMounted) return;
 
                 const sceneModal = gltf.scene;
@@ -500,6 +499,8 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
                         }
                     })
                 }
+
+                console.log(tables)
 
                 if (walls instanceof THREE.Object3D) {
                     const wallsChildrenGroups = walls.children;

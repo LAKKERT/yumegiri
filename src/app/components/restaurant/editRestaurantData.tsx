@@ -56,7 +56,6 @@ export function RestaurantEditForm({ register }: RestaurantForm) {
                 <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>контакты</span>
                 <input {...register('phone_number')} className={`${styles.reservation_inputs} font-[family-name:var(--font-marck)]`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
             </div>
-
         </div>
     )
 }

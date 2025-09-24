@@ -6,8 +6,8 @@ interface FloorCounter {
     prevFloorHandler: () => void,
     nextFloorHandler: () => void,
     currentFloor: number,
-    seatsIsSelected: boolean,
-    isEditMode: boolean,
+    seatsIsSelected?: boolean,
+    isEditMode?: boolean,
     maxFloors: number,
     y: MotionValue<number>,
 }

@@ -46,8 +46,8 @@ export interface Seats {
 export interface Floors {
     uuid: string;
     mockup: File | null;
-    mockup_height: number;
-    mockup_width: number;
+    mockup_height?: number;
+    mockup_width?: number;
     places: Seats[];
 }
 
