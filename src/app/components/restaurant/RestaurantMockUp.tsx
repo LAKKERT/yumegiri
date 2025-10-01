@@ -173,8 +173,8 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
         if (outlinePass) {
             outlinePass.edgeStrength = 5;
             outlinePass.edgeGlow = 0;
-            outlinePass.visibleEdgeColor.set(0xffffff);
-            outlinePass.hiddenEdgeColor.set(0xffffff);
+            // outlinePass.visibleEdgeColor.set(0xffffff);
+            // outlinePass.hiddenEdgeColor.set(0xffffff);
         }
 
         function onPointerMove(e: MouseEvent) {
@@ -220,10 +220,18 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
                     for (let i = 0; i < objParent.length; i++) {
                         if (objParent[i] instanceof THREE.Mesh && objParent[i].name.startsWith('Table') && (currentFloorRef.current === obj.parent.userData.floorIndex)) {
                             if (isClick.current) {
-                                if (obj.parent.userData.TableID) {
-                                    changeSelectedSeat(obj.parent.userData.TableID);
+                                if (obj.parent.userData.tableId) {
+                                    changeSelectedSeat(obj.parent.userData.tableId);
                                 }
                                 ChangeSeatState(true);
+                            }
+                            if (!obj.parent.userData.status) {
+                                outlinePass.visibleEdgeColor.set(0xffffff);
+                                outlinePass.hiddenEdgeColor.set(0xffffff);
+                            } else {
+                                outlinePass.edgeStrength = 10;
+                                outlinePass.visibleEdgeColor.set("#FF0000");
+                                outlinePass.hiddenEdgeColor.set("#FF0000");
                             }
                             selectedObjects.push(objParent[i]);
                         }
@@ -313,7 +321,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
         return () => {
             renderer.dispose();
-            
+
             if (stats) {
                 document.body.removeChild(stats.dom);
             }
@@ -451,7 +459,9 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
             const currentZ = distanceToNextFloorZ;
 
-            loader.load('/Restaurant.glb', function (gltf) {
+            const floorTables = currentRestaurant.floors[floorIndex].tables;
+
+            loader.load(`${currentRestaurant.floors[floorIndex].mockup}`, function (gltf) {
                 if (!isMounted) return;
 
                 const sceneModal = gltf.scene;
@@ -478,6 +488,8 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
                 tables = sceneModal.getObjectByName('Tables');
                 walls = sceneModal.getObjectByName('Walls');
 
+                console.log('tables', tables)
+
                 if (tables) {
                     let placeIndex = 0;
                     const places = currentRestaurant.floors[0].places;
@@ -487,15 +499,22 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
                         //     child.receiveShadow = true;
                         // }
 
+                        // Выставить ID мест в соответствии с этажами
                         // Выставления ID для мест
 
+
                         if (child instanceof THREE.Group) {
+                            console.log('floorTables[placeIndex].id', floorTables[placeIndex].id)
                             child.userData.floorIndex = floorIndex;
+                            child.userData.tableId = floorTables[placeIndex].id;
+                            child.userData.status = floorTables[placeIndex].status;
+                            child.userData.order = floorTables[placeIndex].order;
+
                             //     if (!places[placeIndex].id) return;
                             //     const tableID = floor.places[placeIndex].id
 
                             //     child.userData.TableID = tableID;
-                            //     placeIndex++;
+                            placeIndex++;
                         }
                     })
                 }
@@ -624,7 +643,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
             </div>
 
-            {seatIsSelected.length !== 0 ? (
+            {seatIsSelected ? (
                 <div>
                     <h1>SEAT WAS SELECTED!!!!!!</h1>
                     <p>{seatIsSelected}</p>

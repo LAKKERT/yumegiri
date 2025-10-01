@@ -37,6 +37,7 @@ export default function Restaurants() {
     });
 
     const { restaurants } = useRestaurants();
+    console.log('restaurants', restaurants)
     const [currentRestaurant, setCurrentRestaurant] = useState<Places>();
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
@@ -237,6 +238,7 @@ export default function Restaurants() {
     }
 
     const onSubmit = async (data: Reservation) => {
+        console.log('data', selectedSeat, data)
         if (process.env.NEXT_PUBLIC_ENV === 'production') {
             const { error: bookedErrors } = await supabase
                 .from('guests')
@@ -245,24 +247,24 @@ export default function Restaurants() {
                     phone_number: data.phone_number,
                     booked_date: data.booked_date,
                     restaurant_id: currentRestaurant?.id,
-                    place_id: data.place_id,
+                    table_id: selectedSeat,
                 })
             if (bookedErrors) console.error(bookedErrors);
             else {
-                const { error: updateSeatError } = await supabase
-                    .from('places')
+                const { error: tableErrors } = await supabase
+                    .from('tables')
                     .update({
                         status: true
                     })
-                    .eq('id', data.place_id)
-                if (updateSeatError) console.error(updateSeatError)
+                    .eq('id', selectedSeat)
+                if (tableErrors) console.error(tableErrors)
                 else {
                     setIsBooked(true);
                 }
             }
         }
     };
-
+    
     const getFileProperties = (files: File[] | File | string | null): string | string[] | null => {
         if (Array.isArray(files)) {
             return files.map(file => {

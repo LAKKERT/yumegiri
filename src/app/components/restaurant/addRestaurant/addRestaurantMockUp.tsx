@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 import * as THREE from "three";
+import { v4 as uuidv4 } from 'uuid';
 import { useRef, useState, useEffect, useCallback, RefObject } from "react";
 import { EffectComposer, RenderPass, OutlinePass, OutputPass, GLTFLoader } from "three/examples/jsm/Addons.js";
 import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
-import { Floors, Places } from "@/lib/interfaces/mockup";
+import { Floors, Places, Table } from "@/lib/interfaces/mockup";
 import { UseFormRegister, FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove, UseFieldArrayUpdate } from "react-hook-form";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { table } from "console";
 
 interface AddRestaurantMockUp {
     constraintsRef: RefObject<HTMLDivElement | null>;
@@ -23,11 +23,13 @@ interface AddRestaurantMockUp {
     floors: FieldArrayWithId<Places, "floors", "id">[];
     seatIsSelected: boolean;
     ChangeSeatState: (mode: boolean, index: number) => void;
+    initTables: (table: Table) => void;
 }
 
-export function AddRestaurantMockUp({ constraintsRef, register, append, remove, update, isSwitchingFloor, changeSwithichFloorHandler, currentFloor, floors, seatIsSelected, ChangeSeatState }: AddRestaurantMockUp) {
+export function AddRestaurantMockUp({ constraintsRef, register, append, remove, update, isSwitchingFloor, changeSwithichFloorHandler, currentFloor, floors, seatIsSelected, ChangeSeatState, initTables }: AddRestaurantMockUp) {
     const aspectRatio = `1110 / ${600}`;
 
+    // const [distanceToNextFloorZ, setDistanceToNextFloorZ] = useState<number>(-10);
     const containerRef = useRef<HTMLDivElement>(null);
     const [mapFocus, setMapFocus] = useState<boolean>(false);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -51,6 +53,8 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
     const isClick = useRef<boolean>(false);
     const isZooming = useRef<boolean>(false);
     const zoomScale = useRef<number>(3);
+
+    const [mainSceneIsLoaded, setMainSceneIsLoaded] = useState<boolean>(false);
 
     useEffect(() => {
         isSwitchingFloorRef.current = isSwitchingFloor;
@@ -221,7 +225,8 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                 }
             }
 
-            if (isSwitchingFloorRef.current && currentFloorSceneRef && preFloorSceneRef) {
+            if (isSwitchingFloorRef.current && currentFloorSceneRef.current && preFloorSceneRef.current) {
+                console.log('isSwitchingFloorRef.current && currentFloorSceneRef && preFloorSceneRef', isSwitchingFloorRef.current, currentFloorSceneRef, preFloorSceneRef)
                 isZooming.current = false;
                 zoomScale.current = 3;
 
@@ -314,7 +319,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
             window.removeEventListener("wheel", ScaleMapHandler);
             window.removeEventListener("pointermove", onPointerMove);
         };
-    }, [floors]);
+    }, []);
 
     useEffect(() => {
         window.addEventListener('click', scrollOff);
@@ -336,7 +341,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
         let isMounted = true;
 
-        floorZsRef.current = [];
+        // floorZsRef.current = [];
 
         const scene = sceneRef.current;
         const loader = new GLTFLoader();
@@ -432,91 +437,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         makeXYZGUI(gui, directionalLight.position, 'position', onChange);
         makeXYZGUI(gui, directionalLight.target.position, 'target', onChange);
 
-        let tables: THREE.Object3D | null = null;
-        let walls: THREE.Object3D | null = null;
-        let distanceToNextFloorZ = -10;
-
-        floors.forEach((floor, floorIndex) => {
-            const currentZ = distanceToNextFloorZ;
-
-            loader.load('/Restaurant.glb', function (gltf) {
-                if (!isMounted) return;
-
-                const sceneModal = gltf.scene;
-                sceneModal.userData.floorIndex = floorIndex;
-
-                floorsRef.current[floorIndex] = sceneModal;
-                loadedFloors.push(sceneModal);
-
-                scene.add(sceneModal);
-
-                sceneModal.traverse((child) => {
-                    if (child instanceof THREE.Mesh) {
-                        const material = child.material as THREE.MeshStandardMaterial;
-                        material.side = THREE.FrontSide;
-                        material.transparent = true;
-                        material.opacity = (floorIndex === currentFloorRef.current) ? 1 : 0;
-                        material.needsUpdate = true;
-
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
-
-                tables = sceneModal.getObjectByName('Tables');
-                walls = sceneModal.getObjectByName('Walls');
-
-                if (tables) {
-                    // Столики найденные на загруженной сцене
-                    let index = 0;
-                    tables.traverse((child) => {
-                        if (child instanceof THREE.Group) {
-                            child.userData.floorIndex = floorIndex;
-                            child.userData.tableIndex = index;
-                            index++;
-                        };
-                    });
-                };
-
-                if (walls instanceof THREE.Object3D) {
-                    const wallsChildrenGroups = walls.children;
-                    for (const wallChildren of wallsChildrenGroups) {
-                        if (wallChildren instanceof THREE.Group) {
-                            for (const wall of wallChildren.children) {
-                                if (wall instanceof THREE.Mesh) {
-                                    wall.castShadow = true;
-                                    wall.receiveShadow = true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                console.log(dumpObject(sceneModal).join('\n'));
-
-                if (tables instanceof THREE.Object3D) {
-                    tables.traverse((child) => {
-                        if (child instanceof THREE.Mesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
-                }
-
-                sceneModal.rotateX(1.57 / 2);
-                sceneModal.rotateY(1.57 / 2);
-
-                sceneModal.position.set(0, 0, currentZ);
-
-                const floorZ = floorZsRef.current[currentFloor] || 0;
-
-            }, undefined, function (error) {
-                console.error(error);
-            });
-
-            floorZsRef.current[floorIndex] = currentZ;
-            distanceToNextFloorZ -= FLOOR_SPACING;
-        });
+        setMainSceneIsLoaded(true);
 
         return () => {
             isMounted = false;
@@ -539,7 +460,139 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
             gui.destroy();
         }
 
-    }, [floors]);
+    }, []);
+
+    useEffect(() => {
+
+        // if (!floorsRef.current[currentFloor] === undefined) return;
+
+        const scene = sceneRef.current;
+        if (!scene) return;
+
+        // floorZsRef.current = [];
+
+        let isMounted = true;
+        const loader = new GLTFLoader();
+        const loadedFloors: THREE.Group[] = [];
+
+        let tables: THREE.Object3D | null = null;
+        let walls: THREE.Object3D | null = null;
+        let distanceToNextFloorZ = -10;
+
+        const scenesHasUpdate = floors.some((item) => {
+            return item.hasMockupUpdate
+        });
+
+        if (scenesHasUpdate) {
+            floors.forEach((floor, floorIdx) => {
+                const currentZ = distanceToNextFloorZ;
+                if (floor.hasMockupUpdate) {
+
+                    floorsRef.current[floorIdx] = new THREE.Group;
+
+
+                    const newFloorInd = floors.length - 1;
+
+                    let GLBModalURL: string = "";
+
+                    if (floor.mockup !== null) {
+                        GLBModalURL = URL.createObjectURL(floor.mockup);
+                    }
+
+                    loader.load(GLBModalURL, function (gltf) {
+                        if (!isMounted) return;
+
+                        const sceneModal = gltf.scene;
+                        sceneModal.userData.floorIndex = floorIdx;
+
+                        floorsRef.current[floorIdx] = sceneModal;
+                        loadedFloors.push(sceneModal);
+
+                        console.log('floorsRef.current', floorIdx, floorsRef.current)
+
+                        scene.add(sceneModal);
+
+                        sceneModal.traverse((child) => {
+                            if (child instanceof THREE.Mesh) {
+                                const material = child.material as THREE.MeshStandardMaterial;
+                                material.side = THREE.FrontSide;
+                                material.transparent = true;
+                                material.opacity = (floorIdx === currentFloorRef.current) ? 1 : 0;
+                                material.needsUpdate = true;
+
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+
+                        tables = sceneModal.getObjectByName('Tables');
+                        walls = sceneModal.getObjectByName('Walls');
+
+                        if (tables) {
+                            let index = 0;
+                            tables.traverse((child) => {
+                                if (child instanceof THREE.Group) {
+                                    const uuid = uuidv4();
+                                    child.userData.floorIndex = floorIdx;
+                                    child.userData.tableIndex = index;
+                                    child.userData.uuid = uuid;
+                                    index++;
+
+                                    initTables({
+                                        id: uuid,
+                                        status: false,
+                                        floor_order: currentFloorRef.current,
+                                        number_of_seats: 0,
+                                    })
+                                };
+                            });
+                        };
+
+                        if (walls instanceof THREE.Object3D) {
+                            const wallsChildrenGroups = walls.children;
+                            for (const wallChildren of wallsChildrenGroups) {
+                                if (wallChildren instanceof THREE.Group) {
+                                    for (const wall of wallChildren.children) {
+                                        if (wall instanceof THREE.Mesh) {
+                                            wall.castShadow = true;
+                                            wall.receiveShadow = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (tables instanceof THREE.Object3D) {
+                            tables.traverse((child) => {
+                                if (child instanceof THREE.Mesh) {
+                                    child.castShadow = true;
+                                    child.receiveShadow = true;
+                                }
+                            });
+                        }
+
+                        sceneModal.rotateX(1.57 / 2);
+                        sceneModal.rotateY(1.57 / 2);
+
+                        sceneModal.position.set(0, 0, currentZ);
+
+                        const floorZ = floorZsRef.current[floorIdx] || 0;
+
+                        update(floorIdx, { ...floor, hasMockupUpdate: false });
+
+                    }, undefined, function (error) {
+                        console.error("Error occured", error);
+                        return
+                    });
+                }
+
+                floorZsRef.current[floorIdx] = currentZ;
+                distanceToNextFloorZ -= FLOOR_SPACING;
+            })
+        }
+
+    }, [mainSceneIsLoaded, floors])
+
 
     useEffect(() => {
         preFloorRef.current = currentFloorRef.current;
@@ -554,17 +607,21 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                 currentFloorSceneRef.current.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
                         child.castShadow = true;
+                        console.log('currentFloorSceneRef', currentFloorSceneRef)
                     }
                 })
 
                 preFloorSceneRef.current.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
                         child.castShadow = false;
+
+                        console.log('preFloorSceneRef', preFloorSceneRef)
                     }
                 })
+
+                console.log('http://localhost:3000', floorsRef.current)
             }
         }
-
     }, [floors, currentFloor])
 
     return (

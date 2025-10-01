@@ -12,43 +12,37 @@ export function useRestaurants() {
         const getRestaurants = async () => {
             try {
                 if (process.env.NEXT_PUBLIC_ENV === 'production') {
-                    const {data: restaurantData, error: restaurantError} = await supabase
-                        .from('restaurant')
-                        .select(`
-                            id,
-                            restaurant_name: name,
-                            address,
-                            phone_number,
-                            description,
-                            cover,
-                            gallery (
-                                id,
-                                image,
-                                restaurant_id
-                            ),
-                            floors (
-                                uuid,
-                                mockup,
-                                mockup_height,
-                                mockup_width,
-                                level,
-                                restaurant_id,
-                                places (
-                                    id,
-                                    visible,
-                                    name,
-                                    description,
-                                    status,
-                                    number_of_seats,
-                                    image,
-                                    x,
-                                    y,
-                                    xPer,
-                                    yPer,
-                                    floor_id
-                                )
-                            )
-                        `);
+                const { data: restaurantData, error: restaurantError } = await supabase
+                .from("restaurant")
+                .select(`
+                    id,
+                    restaurant_name: name,
+                    address,
+                    phone_number,
+                    description,
+                    cover,
+                    gallery (
+                    id,
+                    image,
+                    restaurant_id
+                    ),
+                    floors (
+                    uuid,
+                    mockup,
+                    mockup_height,
+                    mockup_width,
+                    level,
+                    restaurant_id,
+                    tables (
+                        id,
+                        order,
+                        status,
+                        number_of_seats,
+                        floor_id
+                    )
+                    )
+                `)
+                .order("order", { ascending: true, referencedTable: "floors.tables" });
 
                     if (restaurantError) console.error(restaurantError);
                     else {

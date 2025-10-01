@@ -1,18 +1,20 @@
 'use client';
+
 import { Header } from "@/app/components/header";
 import { v4 as uuidv4 } from 'uuid';
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { useState, useRef, useCallback, useEffect, ChangeEvent } from "react";
 import Image from "next/image";
 import { saveRestaurantFiles } from "@/helpers/saveImage";
 import { useRouter } from "next/navigation";
 import { motion, animate, MotionValue, useMotionValue, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
 import styles from '@/app/styles/reservatoin/variables.module.scss';
-import { Places } from "@/lib/interfaces/mockup";
+import { Places, Seats, Table } from "@/lib/interfaces/mockup";
 import { supabase } from "@/db/supabaseConfig";
 import { FloorCounter } from "@/app/components/restaurant/floorCounter";
 import { AddRestaurantMockUp } from "@/app/components/restaurant/addRestaurant/addRestaurantMockUp";
 import { MainInfo } from "@/app/components/restaurant/addRestaurant/mainInfo";
+import { floor } from "lodash";
 
 export default function AddMockUP() {
     const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>({});
@@ -20,6 +22,8 @@ export default function AddMockUP() {
     const [mockUPUrl, setMockUPUrl] = useState<string | null>(null);
     const [currentFloor, setCurrentFloor] = useState<number>(0);
     const [isLastImage, setIsLastImage] = useState<boolean>(false);
+
+    const [tables, setTables] = useState<Table[]>([]);
 
     const [seatIsSelected, setSeatIsSelected] = useState<boolean>(false);
     const [selectedTableIndex, setSelectedTableIndex] = useState<number | null>(null);
@@ -50,10 +54,11 @@ export default function AddMockUP() {
             cover: null,
             floors: [{
                 uuid: uuidv4(),
+                hasMockupUpdate: true,
                 mockup: null,
                 mockup_height: 0,
                 mockup_width: 0,
-                places: []
+                tables: []
             }],
         },
     });
@@ -141,125 +146,204 @@ export default function AddMockUP() {
 
     const onSubmit = async (data: Places) => {
         try {
-            const galleryArray = (data.gallery) instanceof FileList ? Array.from(data.gallery) : [];
+            const formData = new FormData();
 
-            const galleryProperties = galleryArray.map(file => getFileProperties(file));
-            const galleryDataPromises = galleryArray.map(file => processData(file));
-            const galleryData = await Promise.all(galleryDataPromises);
+            data.floors.forEach((floor) => {
+                if (floor.mockup) {
+                    // если у тебя mockup = File
+                    formData.append("files", floor.mockup);
 
-            const mockupPropeties = data.floors.map(floor => getFileProperties(floor.mockup));
-            const imagesProperty = data.floors.map(floor => floor.places.map(seat => getFileProperties(seat.image)));
-            const imagesPropertyForSave = data.floors.flatMap(floor => floor.places.map(seat => getFileProperties(seat.image)));
-            const coverProperties = getFileProperties(data.cover);
+                    // если mockup = File[], например input type="file" multiple
+                    // floor.mockup.forEach((f) => formData.append("files", f));
+                }
+            });
 
-            const coverData = await processData(data.cover);
+            const res = await fetch("/api/restaurant/uploadModel", {
+                method: "POST",
+                body: formData,
+            });
 
-            const mockUpDataPromises = data.floors.map(floor => processData(floor.mockup));
-            const mockUpData = await Promise.all(mockUpDataPromises);
+            const result = await res.json();
 
-            const imagesDataPromises = data.floors.flatMap(floor => floor.places.map(seat => processData(seat.image)));
-            const imagesData = await Promise.all(imagesDataPromises);
+            const filePaths = result.paths;
 
-            saveRestaurantFiles(mockUpData, mockupPropeties);
-            saveRestaurantFiles(imagesData, imagesPropertyForSave);
-            saveRestaurantFiles(coverData, coverProperties);
-            saveRestaurantFiles(galleryData, galleryProperties);
+            if (res.ok && tables) {
+                try {
+                    const { data: restaurant_id, error: restaurantError } = await supabase
+                        .from('restaurant')
+                        .insert({
+                            name: data.restaurant_name,
+                            description: data.description,
+                            address: data.address,
+                            phone_number: data.phone_number,
+                            // cover: coverProperties
+                        })
+                        .select('id')
+                        .single();
 
-            const payload = {
-                ...data,
-            };
+                    if (restaurantError) console.error(restaurantError);
+                    else {
+                        for (let i = 0; i < data.floors.length; i++) {
+                            const { data: floorData, error: floorsError } = await supabase
+                                .from('floors')
+                                .insert({
+                                    mockup: filePaths[i],
+                                    order: data.floors[i].order,
+                                    restaurant_id: restaurant_id.id
+                                })
+                                .select('uuid')
+                                .single();
 
-            if (process.env.NEXT_PUBLIC_ENV === 'production') {
-                const { data: restaurant_id, error } = await supabase
-                    .from('restaurant')
-                    .insert({
-                        name: data.restaurant_name,
-                        description: data.description,
-                        address: data.address,
-                        phone_number: data.phone_number,
-                        cover: coverProperties
-                    })
-                    .select('id')
-                    .single();
+                            if (floorsError) console.error(floorsError);
 
-                if (error) {
-                    console.error(error);
-                } else {
-                    for (let i = 0; i < galleryProperties.length; i++) {
-                        const { error: galleryError } = await supabase
-                            .from('gallery')
-                            .insert({
-                                image: galleryProperties[i],
-                                restaurant_id: restaurant_id.id
-                            })
-                        if (galleryError) console.error(galleryError);
+                            if (floorData) {
+                                for (const table of tables) {
+                                    if (table.floor_order === i) {
+                                        const { error: tablesError } = await supabase
+                                            .from('tables')
+                                            .insert({
+                                                id: table.id,
+                                                status: table.status,
+                                                number_of_seats: table.number_of_seats,
+                                                floor_id: floorData?.uuid
+                                            });
+        
+                                        if (tablesError) console.error(tablesError);
+                                    }
+                                }
+                            }
+                        }
                     }
-
-
-                    for (let floorIdx = 0; floorIdx < data.floors.length; floorIdx++) {
-                        const { data: floor_id, error: floorError } = await supabase
-                            .from('floors')
-                            .insert({
-                                mockup: mockupPropeties[floorIdx],
-                                mockup_height: data.floors[floorIdx].mockup_height,
-                                mockup_width: data.floors[floorIdx].mockup_width,
-                                level: floorIdx,
-                                restaurant_id: restaurant_id.id,
-                            })
-                            .select('uuid')
-                            .single();
-                        if (floorError) console.error(floorError);
-                        else {
-                            for (let seatIdx = 0; seatIdx < data.floors[floorIdx].places.length; seatIdx++) {
-                                const { error: placesError } = await supabase
-                                    .from('places')
-                                    .insert({
-                                        name: data.floors[floorIdx].places[seatIdx].name,
-                                        description: data.floors[floorIdx].places[seatIdx].description,
-                                        number_of_seats: data.floors[floorIdx].places[seatIdx].number_of_seats,
-                                        x: data.floors[floorIdx].places[seatIdx].x,
-                                        y: data.floors[floorIdx].places[seatIdx].y,
-                                        xPer: data.floors[floorIdx].places[seatIdx].xPer,
-                                        yPer: data.floors[floorIdx].places[seatIdx].yPer,
-                                        image: imagesProperty[floorIdx][seatIdx],
-                                        floor_id: floor_id.uuid,
-                                    });
-
-                                if (placesError) {
-                                    console.error(placesError);
-                                };
-                            };
-                        };
-                    };
-                };
-            } else {
-                const response = await fetch(`/api/restaurant/addRestaurantMockUp`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    router.push('/');
-                } else {
-                    console.error('Error occured');
+                } catch (error) {
+                    console.error(error)
                 }
             }
-
         } catch (error) {
             console.error(error);
         }
+
+        // try {
+        //     const galleryArray = (data.gallery) instanceof FileList ? Array.from(data.gallery) : [];
+
+        //     const galleryProperties = galleryArray.map(file => getFileProperties(file));
+        //     const galleryDataPromises = galleryArray.map(file => processData(file));
+        //     const galleryData = await Promise.all(galleryDataPromises);
+
+        //     const mockupPropeties = data.floors.map(floor => getFileProperties(floor.mockup));
+        //     const imagesProperty = data.floors.map(floor => floor.places.map(seat => getFileProperties(seat.image)));
+        //     const imagesPropertyForSave = data.floors.flatMap(floor => floor.places.map(seat => getFileProperties(seat.image)));
+        //     const coverProperties = getFileProperties(data.cover);
+
+        //     const coverData = await processData(data.cover);
+
+        //     const mockUpDataPromises = data.floors.map(floor => processData(floor.mockup));
+        //     const mockUpData = await Promise.all(mockUpDataPromises);
+
+        //     const imagesDataPromises = data.floors.flatMap(floor => floor.places.map(seat => processData(seat.image)));
+        //     const imagesData = await Promise.all(imagesDataPromises);
+
+        //     saveRestaurantFiles(mockUpData, mockupPropeties);
+        //     saveRestaurantFiles(imagesData, imagesPropertyForSave);
+        //     saveRestaurantFiles(coverData, coverProperties);
+        //     saveRestaurantFiles(galleryData, galleryProperties);
+
+        //     const payload = {
+        //         ...data,
+        //     };
+
+        //     if (process.env.NEXT_PUBLIC_ENV === 'production') {
+        //         const { data: restaurant_id, error } = await supabase
+        //             .from('restaurant')
+        //             .insert({
+        //                 name: data.restaurant_name,
+        //                 description: data.description,
+        //                 address: data.address,
+        //                 phone_number: data.phone_number,
+        //                 cover: coverProperties
+        //             })
+        //             .select('id')
+        //             .single();
+
+        //         if (error) {
+        //             console.error(error);
+        //         } else {
+        //             for (let i = 0; i < galleryProperties.length; i++) {
+        //                 const { error: galleryError } = await supabase
+        //                     .from('gallery')
+        //                     .insert({
+        //                         image: galleryProperties[i],
+        //                         restaurant_id: restaurant_id.id
+        //                     })
+        //                 if (galleryError) console.error(galleryError);
+        //             }
+
+
+        //             for (let floorIdx = 0; floorIdx < data.floors.length; floorIdx++) {
+        //                 const { data: floor_id, error: floorError } = await supabase
+        //                     .from('floors')
+        //                     .insert({
+        //                         mockup: mockupPropeties[floorIdx],
+        //                         mockup_height: data.floors[floorIdx].mockup_height,
+        //                         mockup_width: data.floors[floorIdx].mockup_width,
+        //                         level: floorIdx,
+        //                         restaurant_id: restaurant_id.id,
+        //                     })
+        //                     .select('uuid')
+        //                     .single();
+        //                 if (floorError) console.error(floorError);
+        //                 else {
+        //                     for (let seatIdx = 0; seatIdx < data.floors[floorIdx].places.length; seatIdx++) {
+        //                         const { error: placesError } = await supabase
+        //                             .from('places')
+        //                             .insert({
+        //                                 name: data.floors[floorIdx].places[seatIdx].name,
+        //                                 description: data.floors[floorIdx].places[seatIdx].description,
+        //                                 number_of_seats: data.floors[floorIdx].places[seatIdx].number_of_seats,
+        //                                 x: data.floors[floorIdx].places[seatIdx].x,
+        //                                 y: data.floors[floorIdx].places[seatIdx].y,
+        //                                 xPer: data.floors[floorIdx].places[seatIdx].xPer,
+        //                                 yPer: data.floors[floorIdx].places[seatIdx].yPer,
+        //                                 image: imagesProperty[floorIdx][seatIdx],
+        //                                 floor_id: floor_id.uuid,
+        //                             });
+
+        //                         if (placesError) {
+        //                             console.error(placesError);
+        //                         };
+        //                     };
+        //                 };
+        //             };
+        //         };
+        //     } else {
+        //         const response = await fetch(`/api/restaurant/addRestaurantMockUp`, {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json'
+        //             },
+        //             body: JSON.stringify(payload)
+        //         });
+
+        //         if (response.ok) {
+        //             router.push('/');
+        //         } else {
+        //             console.error('Error occured');
+        //         }
+        //     }
+
+        // } catch (error) {
+        //     console.error(error);
+        // }
     };
 
     const addFloor = () => {
         append({
             uuid: uuidv4(),
             mockup: null,
+            order: floors.length += 1,
+            hasMockupUpdate: true,
             mockup_height: 0,
             mockup_width: 0,
-            places: []
+            tables: []
         });
 
         setCountOfFloors(prev => prev += 1);
@@ -306,28 +390,28 @@ export default function AddMockUP() {
         if (order + 1 < gallery.length) setOrder(prev => prev += 1);
     }
 
-    useEffect(() => {
-        const changeFloor = async () => {
-            if (floors[currentFloor] && floors[currentFloor].mockup !== null) {
-                try {
-                    const imageData = await new Promise<string>((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result as string);
-                        reader.onerror = (error) => reject(error);
-                        reader.readAsDataURL(floors[currentFloor].mockup as File);
-                    });
+    // useEffect(() => {
+    //     const changeFloor = async () => {
+    //         if (floors[currentFloor] && floors[currentFloor].mockup !== null) {
+    //             try {
+    //                 const imageData = await new Promise<string>((resolve, reject) => {
+    //                     const reader = new FileReader();
+    //                     reader.onload = () => resolve(reader.result as string);
+    //                     reader.onerror = (error) => reject(error);
+    //                     reader.readAsDataURL(floors[currentFloor].mockup as File);
+    //                 });
 
-                    setMockUPUrl(imageData);
-                } catch (error) {
-                    console.error('Ошибка загрузки изображения:', error);
-                }
-            } else {
-                setMockUPUrl(null);
-            }
-        };
+    //                 setMockUPUrl(imageData);
+    //             } catch (error) {
+    //                 console.error('Ошибка загрузки изображения:', error);
+    //             }
+    //         } else {
+    //             setMockUPUrl(null);
+    //         }
+    //     };
 
-        changeFloor();
-    }, [currentFloor, floors]);
+    //     changeFloor();
+    // }, [currentFloor, floors]);
 
     useEffect(() => {
         if (!carouselRef.current) return
@@ -376,6 +460,13 @@ export default function AddMockUP() {
         }
     };
 
+    const onSelectedModal = (file: File) => {
+        console.log('currentfloor', currentFloor, file)
+        update(currentFloor, { ...floors[currentFloor], mockup: file })
+
+        setValue(`floors.${currentFloor}.mockup`, file);
+    }
+
     const prevFloorHandler = () => {
         if (currentFloor + 1 > 1) setCurrentFloor(prev => prev -= 1);
         setIsSwitchingFloor(true);
@@ -388,13 +479,18 @@ export default function AddMockUP() {
 
     const changeSwithichFloorHandler = (mode: boolean) => {
         setIsSwitchingFloor(mode);
-        console.log('mode', mode)
     };
 
     const ChangeSeatState = (mode: boolean, index: number) => {
         setSeatIsSelected(mode);
         setSelectedTableIndex(index);
     };
+
+    const initTables = (table: Table) => {
+        setTables((prev) => [...prev, table])
+    }
+
+    console.log('tables', tables)
 
     return (
         <div className="flex justify-center min-h-[calc(100vh-100px)] h-full bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
@@ -453,11 +549,45 @@ export default function AddMockUP() {
                     <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={floors.length} y={y} />
 
                     <div className="flex flex-row gap-5">
+                        {/* {floors.map((floor, index) => (
+                            <div key={floor.uuid} className="flex flex-col gap-2">
+                                <Controller
+                                    control={control}
+                                    name={`floors.${index}.mockup`}
+                                    render={({ field }) => (
+                                        <input
+                                            type="file"
+                                            accept=".glb,.gltf,.fbx,.obj" // пример форматов 3D
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0] || null;
+                                                field.onChange(file); // сохраняем именно File | null
+                                            }}
+                                        />
+                                    )}
+                                />
+                                <span>
+                                    {floor.mockup ? `Выбран: ${floor.mockup.name}` : "Файл не выбран"}
+                                </span>
+                            </div>
+                        ))} */}
+                        {floors.map((floor, floorIdx) => (
+                            <div key={floorIdx} className={`${floorIdx !== currentFloor ? "hidden" : "block"}`}>
+                                <input onChange={(e) => {
+                                    const file = e.target.files?.item(0);
+                                    if (file instanceof File) {
+                                        onSelectedModal(file)
+                                    }
+                                }} type="file" id="3Dfile" />
+
+                                <label htmlFor="3Dfile" className={`${styles.restaurant_button}`}>Выбрать 3д файл</label>
+                            </div>
+                        ))}
+
                         <button type="button" onClick={addFloor} className={`${styles.restaurant_button}`}>Добавить этаж</button>
                         <button type="button" onClick={handleDeleteFloor} className={`${styles.delete_button} bg-red-400`}>Удалить этаж</button>
                     </div>
 
-                    <AddRestaurantMockUp constraintsRef={constraintsRef} register={register} append={append} remove={remove} update={update} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} currentFloor={currentFloor} floors={floors} seatIsSelected={seatIsSelected} ChangeSeatState={ChangeSeatState} />
+                    <AddRestaurantMockUp constraintsRef={constraintsRef} register={register} append={append} remove={remove} update={update} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} currentFloor={currentFloor} floors={floors} seatIsSelected={seatIsSelected} ChangeSeatState={ChangeSeatState} initTables={initTables} />
 
                     <button type="submit" className={`cursor-pointer`}>
                         СОХРАНИТЬ
