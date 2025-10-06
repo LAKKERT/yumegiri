@@ -16,7 +16,7 @@ export function Header() {
                 </Link>
 
                 <Link href="/restaurants" className={`hidden lg:block py-2 px-4 transition-colors duration-300 border-2 rounded-xl border-transparent hover:border-white`}>
-                    РЕСТОРАНЫ
+                    КАФЕ
                 </Link>
             </div>
         </div>

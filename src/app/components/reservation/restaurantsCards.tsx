@@ -15,9 +15,6 @@ interface Props {
 }
 
 export function RestaurantsCards({ restaurants, control, places, restaurantIsSelected, setRestaurantIsSelected, setMockup, setRestaurantDetail }: Props) {
-
-    console.log('restaurants', restaurants)
-
     return (
 
         

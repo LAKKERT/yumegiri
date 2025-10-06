@@ -16,6 +16,7 @@ import { processData } from "@/helpers/readFiles";
 import { useCheckUserRole } from "@/lib/hooks/useCheckRole";
 import styles from '@/app/styles/reservatoin/variables.module.scss';
 import { RestaurantToolBar } from '@/app/components/restaurant/toolBar';
+import moment from "moment";
 
 export default function Restaurants() {
     const { userRole } = useCheckUserRole();
@@ -37,7 +38,6 @@ export default function Restaurants() {
     });
 
     const { restaurants } = useRestaurants();
-    console.log('restaurants', restaurants)
     const [currentRestaurant, setCurrentRestaurant] = useState<Places>();
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
@@ -238,14 +238,24 @@ export default function Restaurants() {
     }
 
     const onSubmit = async (data: Reservation) => {
-        console.log('data', selectedSeat, data)
         if (process.env.NEXT_PUBLIC_ENV === 'production') {
+
+            const now = moment();
+
+            const reservedUntil = now.add(30, 'minutes');
+
+            const bookedUntil = now.add(2, 'hours');
+
+            const reservedUntilISO = reservedUntil.toISOString();
+            const bookedUntilISO = bookedUntil.toISOString();
+
             const { error: bookedErrors } = await supabase
                 .from('guests')
                 .insert({
                     name: data.name,
                     phone_number: data.phone_number,
-                    booked_date: data.booked_date,
+                    booked_date: bookedUntilISO,
+                    expires_at: reservedUntilISO,
                     restaurant_id: currentRestaurant?.id,
                     table_id: selectedSeat,
                 })
@@ -264,7 +274,7 @@ export default function Restaurants() {
             }
         }
     };
-    
+
     const getFileProperties = (files: File[] | File | string | null): string | string[] | null => {
         if (Array.isArray(files)) {
             return files.map(file => {
@@ -296,13 +306,13 @@ export default function Restaurants() {
             const mockUpDataPromises = data.floors.map((floor: Floors) => processData(floor.mockup));
             const mockUpData = await Promise.all(mockUpDataPromises);
 
-            const imagesProperty = data.floors.map((floor: Floors) => floor.places.map((seat: Seats) => getFileProperties(seat.image)));
-            const imagesDataPromises = data.floors.flatMap((floor: Floors) => floor.places.map((seat: Seats) => processData(seat.image)));
-            const imagesPropertyForSave = data.floors.flatMap((floor: Floors) => floor.places.map((seat: Seats) => getFileProperties(seat.image)));
-            const imagesData = await Promise.all(imagesDataPromises);
+            // const imagesProperty = data.floors.map((floor: Floors) => floor.places.map((seat: Seats) => getFileProperties(seat.image)));
+            // const imagesDataPromises = data.floors.flatMap((floor: Floors) => floor.places.map((seat: Seats) => processData(seat.image)));
+            // const imagesPropertyForSave = data.floors.flatMap((floor: Floors) => floor.places.map((seat: Seats) => getFileProperties(seat.image)));
+            // const imagesData = await Promise.all(imagesDataPromises);
 
             saveRestaurantFiles(mockUpData, mockupPropeties);
-            saveRestaurantFiles(imagesData, imagesPropertyForSave);
+            // saveRestaurantFiles(imagesData, imagesPropertyForSave);
             saveRestaurantFiles(coverData, coverProperties);
             saveRestaurantFiles(galleryData, galleryProperties);
 
@@ -360,27 +370,27 @@ export default function Restaurants() {
                             .select('uuid')
                             .single();
                         if (floorError) console.error(floorError);
-                        else {
-                            for (let seatIdx = 0; seatIdx < data.floors[floorIdx].places.length; seatIdx++) {
-                                const { error: placesError } = await supabase
-                                    .from('places')
-                                    .insert({
-                                        name: data.floors[floorIdx].places[seatIdx].name,
-                                        description: data.floors[floorIdx].places[seatIdx].description,
-                                        number_of_seats: data.floors[floorIdx].places[seatIdx].number_of_seats,
-                                        x: data.floors[floorIdx].places[seatIdx].x,
-                                        y: data.floors[floorIdx].places[seatIdx].y,
-                                        xPer: data.floors[floorIdx].places[seatIdx].xPer,
-                                        yPer: data.floors[floorIdx].places[seatIdx].yPer,
-                                        image: imagesProperty[floorIdx][seatIdx],
-                                        floor_id: floor_id.uuid,
-                                    });
+                        // else {
+                        //     for (let seatIdx = 0; seatIdx < data.floors[floorIdx].places.length; seatIdx++) {
+                        //         const { error: placesError } = await supabase
+                        //             .from('places')
+                        //             .insert({
+                        //                 name: data.floors[floorIdx].places[seatIdx].name,
+                        //                 description: data.floors[floorIdx].places[seatIdx].description,
+                        //                 number_of_seats: data.floors[floorIdx].places[seatIdx].number_of_seats,
+                        //                 x: data.floors[floorIdx].places[seatIdx].x,
+                        //                 y: data.floors[floorIdx].places[seatIdx].y,
+                        //                 xPer: data.floors[floorIdx].places[seatIdx].xPer,
+                        //                 yPer: data.floors[floorIdx].places[seatIdx].yPer,
+                        //                 image: imagesProperty[floorIdx][seatIdx],
+                        //                 floor_id: floor_id.uuid,
+                        //             });
 
-                                if (placesError) {
-                                    console.error(placesError);
-                                }
-                            }
-                        }
+                        //         if (placesError) {
+                        //             console.error(placesError);
+                        //         }
+                        //     }
+                        // }
                     }
                 }
             }
@@ -422,14 +432,30 @@ export default function Restaurants() {
                     }}
                     className={`fixed w-full min-h-[calc(100vh-100px)] duration-300 ${seatIsSelected ? ' z-50' : ''}`}
                 >
-                    <form onSubmit={handleSubmit(onSubmit)} className={`flex flex-col items-center p-4 text-black rounded-2xl text-lg w-[350px] max-h-[420px] bg-[#FFA685] ${seatIsSelected ? 'z-50' : 'hidden z-0 select-none'} fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isEditMode ? 'hidden' : ''} `}>
+                    <form onSubmit={handleSubmit(onSubmit)} className={`flex flex-col items-center py-4 px-10 text-black rounded text-lg w-full max-w-[450px] bg-[#ffa685] ${seatIsSelected ? 'z-50' : 'hidden z-0 select-none'} fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isEditMode ? 'hidden' : ''} `}>
                         <div className={`w-full text-center flex flex-col gap-4 ${isBooked ? 'hidden' : ''}`}>
-                            <button type="button" className="self-start cursor-pointer" onClick={() => setSeatIsSelected(false)}>вернуться</button>
-                            <p>Заполните форму</p>
-                            <input {...register('name')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} type="text" placeholder="Имя фамелия" />
+                            <button type="button" className={`self-start ${styles.reservation_form_button}`} onClick={() => setSeatIsSelected(false)}>вернуться</button>
+                            <div className="w-full p-2 bg-white rounded">
+                                <p className={`text-[#D57F7E] font-[family-name:var(--font-arimo)]`}>Обратите внимание: ваш столик будет ожидать вас в течение 30 минут после подтверждения.
+                                    Если вы не успеете прийти, бронь автоматически освободится для других гостей.</p>
+                            </div>
+                            <div className="relative">
+                                <input id="name" {...register('name')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} placeholder=" " type="text" />
+                                <label htmlFor="name" className={`absolute left-1 top-0 ${styles.user_data_label} font-[family-name:var(--font-arimo)]`}>Имя</label>
+                            </div>
+
+                            <div className="relative">
+                                <input id="phone_number" {...register('phone_number')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} placeholder=" " type="text" />
+                                <label htmlFor="phone_number" className={`absolute left-1 top-0 ${styles.user_data_label} font-[family-name:var(--font-arimo)]`}>Номер телефона</label>
+                            </div>
+
+                            {/* <div className="relative">
+                                <label htmlFor="booked_date" className={`absolute left-1 top-0 ${styles.user_data_label} font-[family-name:var(--font-arimo)]`}>Имя</label>
+                                <input id="booked_date" {...register('booked_date')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} type="text" />
+                            </div>
                             <input {...register('phone_number')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} type="text" placeholder="Номер телефона" />
-                            <input {...register('booked_date')} className={`font-[family-name:var(--font-arimo)] cursor-pointer`} type="date" placeholder="Дата и время" />
-                            <button type="submit" className="cursor-pointer">ЗАРЕЗИРВИРОВАТЬ</button>
+                            <input {...register('booked_date')} className={`font-[family-name:var(--font-arimo)] cursor-pointer`} type="date" placeholder="Дата и время" /> */}
+                            <button type="submit" className={`mx-auto ${styles.reservation_form_button}`}>ЗАБРОНИРОВАТЬ</button>
                         </div>
 
                         <div className={`flex flex-col items-center gap-2 ${isBooked ? '' : 'hidden'}`}>
@@ -448,8 +474,8 @@ export default function Restaurants() {
                 <form onSubmit={editFormSubmit(onSubmitEditForm)}>
                     <div className={`relative max-w-[1110px] h-full w-full flex flex-col gap-4 items-center`}>
                         <div className="max-w-[760px] w-full flex flex-col items-center gap-2 py-2 rounded-2xl text-black px-6">
-                            <p className="text-lg text-center text-balance text-white uppercase">Выберите ресторан и место на схеме ресторана, которое хотите зарезервировать. <br />И заполните форму.</p>
-                            <h3 className="uppercase">рестораны</h3>
+                            <p className="text-lg text-center text-balance text-white uppercase">Выберите кафе и место на схеме кафе, которое хотите зарезервировать. <br />И заполните форму.</p>
+                            {/* <h3 className="uppercase"></h3> */}
                             <div className="flex flex-wrap gap-4">
                                 {restaurants.map((restaurant, restaurantIndex) => (
                                     <button type="button" key={restaurant.id} disabled={seatIsSelected ? true : false} onClick={() => changeRestaurantHandler(restaurantIndex)} className={`w-[160px] h-[50px] flex items-center justify-center border-2 border-[#ff8f66] bg-[#ff8f66] rounded-lg transform transition-colors duration-300 ease-in-out ${currentRestaurant?.id === restaurant.id ? 'bg-black text-[#ff8f66]' : ''} cursor-pointer`}>
@@ -511,7 +537,7 @@ export default function Restaurants() {
                             <MainInfo prevImageHandler={prevImageHandler} nextImageHandler={nextImageHandler} carouselRef={carouselRef} maskImage={maskImage} isLastImage={isLastImage} selectedImages={selectedImages} isEditMode={isEditMode} currentRestaurant={currentRestaurant} order={order} />
                         </div>
 
-                        <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} seatIsSelected={seatIsSelected} isEditMode={isEditMode} y={y}/>
+                        <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} seatIsSelected={seatIsSelected} isEditMode={isEditMode} y={y} />
 
                         {isEditMode && currentRestaurant ? (
                             <EditRestaurantMockUp restaurantDetail={currentRestaurant} register={editFormRegister} fields={fields} append={append} remove={remove} update={update} replace={replace} isSwitchingFloor={isSwitchingFloor} />

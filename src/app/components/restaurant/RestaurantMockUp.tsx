@@ -14,6 +14,7 @@ import { RenderPass, OutputPass } from "three/examples/jsm/Addons.js";
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { texture } from "three/src/nodes/TSL.js";
 
 
 interface RestaurantMockUp {
@@ -358,6 +359,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
         const scene = sceneRef.current;
         const loader = new GLTFLoader();
+        // const imageLoader = new THREE.TextureLoader();
 
         const disposeScene = (object: THREE.Object3D) => {
             object.traverse((child) => {
@@ -455,6 +457,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
         let walls: THREE.Object3D | null = null;
         let distanceToNextFloorZ = -10;
 
+        
         currentRestaurant.floors.forEach((floor, floorIndex) => {
 
             const currentZ = distanceToNextFloorZ;
@@ -509,11 +512,6 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
                             child.userData.tableId = floorTables[placeIndex].id;
                             child.userData.status = floorTables[placeIndex].status;
                             child.userData.order = floorTables[placeIndex].order;
-
-                            //     if (!places[placeIndex].id) return;
-                            //     const tableID = floor.places[placeIndex].id
-
-                            //     child.userData.TableID = tableID;
                             placeIndex++;
                         }
                     })

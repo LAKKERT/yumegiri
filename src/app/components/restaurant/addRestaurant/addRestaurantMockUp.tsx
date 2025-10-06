@@ -13,7 +13,6 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 interface AddRestaurantMockUp {
     constraintsRef: RefObject<HTMLDivElement | null>;
     register: UseFormRegister<Places>;
-
     append: UseFieldArrayAppend<Places, "floors">;
     remove: UseFieldArrayRemove;
     update: UseFieldArrayUpdate<Places, "floors">;
@@ -37,6 +36,9 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
     const seatsArrayRef = useRef<THREE.Mesh[]>([]);
     const tablesRef = useRef<THREE.Mesh[]>([]);
 
+    const startAnimation = useRef(0.0);
+    const opacityStartAnimation = useRef(0.0)
+
     const floorZsRef = useRef<number[]>([]);
     const floorsRef = useRef<THREE.Group<THREE.Object3DEventMap>[]>([]);
     const preFloorRef = useRef<number>(0);
@@ -44,7 +46,11 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
     const preFloorSceneRef = useRef<THREE.Group<THREE.Object3DEventMap> | null>(null);
     const currentFloorSceneRef = useRef<THREE.Group<THREE.Object3DEventMap> | null>(null);
 
+    const cloudsRef = useRef<THREE.Mesh[][]>([]);
+    const ShouldShowClouds = useRef(true);
+
     const [cameraPos, setCameraPos] = useState({ x: 0, y: 0, z: 0 });
+    const cameraPositionZ = useRef<number | null>(10);
 
     const isSwitchingFloorRef = useRef(isSwitchingFloor);
 
@@ -58,11 +64,61 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
     useEffect(() => {
         isSwitchingFloorRef.current = isSwitchingFloor;
+        startAnimation.current = performance.now();
+        opacityStartAnimation.current = performance.now();
+        // if (cameraRef.current) {
+        //     cameraPositionZ.current = cameraRef.current?.position.z;
+        // }
     }, [isSwitchingFloor]);
 
-    const FLOOR_SPACING = 10;
+    const FLOOR_SPACING = 40;
     const DEFAULT_ZOOM = 3;
-    const MAP_MOVEMENT_CONSTRAINTS = { minX: -1.5, maxX: 1.5, minY: -1.5, maxY: 1.5 };
+    const MAP_MOVEMENT_CONSTRAINTS = { minX: -3.5, maxX: 3.5, minY: -3.5, maxY: 3.5 };
+
+    const clouds = [
+        {
+            x: -2.4,
+            y: 1.3,
+            z: 4,
+            path: '/restaurant mockup/cloud1.png',
+        },
+        {
+            x: -1.2,
+            y: 2,
+            z: 5,
+            path: '/restaurant mockup/cloud2.png',
+        },
+        {
+            x: 2,
+            y: -1.5,
+            z: 6,
+            path: '/restaurant mockup/cloud3.png',
+        },
+        {
+            x: -3.5,
+            y: 3,
+            z: 7,
+            path: '/restaurant mockup/cloud4.png',
+        },
+        {
+            x: 1.5,
+            y: 2.5,
+            z: 12,
+            path: '/restaurant mockup/cloud5.png',
+        },
+        {
+            x: 3.52,
+            y: 4.5,
+            z: 9,
+            path: '/restaurant mockup/cloud6.png',
+        },
+        {
+            x: -0.5,
+            y: -1.5,
+            z: 8,
+            path: '/restaurant mockup/cloud7.png',
+        },
+    ]
 
     const scrollOff = useCallback((e: MouseEvent | PointerEvent | React.MouseEvent<HTMLDivElement>) => {
         if (e.target === document.getElementById('CanvasID')) {
@@ -112,6 +168,18 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         return Math.min(Math.max(value, min), max)
     }
 
+    function easeInQuad(t) {
+        return t * t;
+    }
+
+    function LongInEaseOut(t) {
+        return Math.pow(t, 2) * (3 - 2 * t);
+    }
+
+    function easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
     useEffect(() => {
         if (!containerRef.current) return;
 
@@ -123,8 +191,23 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         );
         sceneRef.current = new THREE.Scene();
 
+        let scaleNumber = .5;
+
         const scene = sceneRef.current;
         const camera = cameraRef.current;
+
+        const animationDuration = 2000;
+        const startTime = performance.now();
+
+        const maxDistanceToFloor = 40;
+
+        const maxDistance = 20;
+        const minOpacity = 0;
+        const maxOpacity = 1;
+
+        const maxScaleDistance = 30;
+        const maxScale = 1;
+        const minScale = .5;
 
         const axesHelper = new THREE.AxesHelper(15);
         scene.add(axesHelper);
@@ -193,7 +276,8 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         window.addEventListener("wheel", ScaleMapHandler);
         window.addEventListener("pointermove", onPointerMove);
 
-        camera.position.z = 10;
+        // camera.position.z = 10;
+        camera.position.z = cameraPositionZ.current
 
         const animate = () => {
             stats.begin();
@@ -214,7 +298,6 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                     for (let i = 0; i < objParent.length; i++) {
                         if (objParent[i] instanceof THREE.Mesh && objParent[i].name.startsWith('Table') && (currentFloorRef.current === obj.parent.userData.floorIndex)) {
                             if (isClick.current) {
-                                console.log(obj.parent)
                                 // Рейкаст для столов
                                 // сделать debaunce т.к запускается слишком часто
                                 ChangeSeatState(true, obj.parent.userData.tableIndex);
@@ -225,8 +308,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                 }
             }
 
-            if (isSwitchingFloorRef.current && currentFloorSceneRef.current && preFloorSceneRef.current) {
-                console.log('isSwitchingFloorRef.current && currentFloorSceneRef && preFloorSceneRef', isSwitchingFloorRef.current, currentFloorSceneRef, preFloorSceneRef)
+            if (isSwitchingFloorRef.current && currentFloorSceneRef.current && preFloorSceneRef.current && cloudsRef.current && cameraPositionZ.current) {
                 isZooming.current = false;
                 zoomScale.current = 3;
 
@@ -234,10 +316,18 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                 const nextFloor = currentFloorSceneRef.current;
 
                 const floor = currentFloorRef.current;
-                const targetZ = floorZsRef.current[floor] + 10;
-                const floorDistanceDiff = targetZ - camera.position.z;
+                const targetZ = floorZsRef.current[floor] + 20;
+                const floorDistanceDiff = targetZ - cameraPositionZ.current;
 
-                camera.position.z += floorDistanceDiff * 0.025
+                const now = performance.now();
+                const elapsed = now - startAnimation.current;
+
+                let t = elapsed / animationDuration;
+                if (t > 1) t = 1;
+
+                const easedT = LongInEaseOut(t);
+
+                camera.position.z = cameraPositionZ.current + floorDistanceDiff * easedT
 
                 const zoomDiff = DEFAULT_ZOOM - camera.zoom;
                 camera.zoom += zoomDiff * .05;
@@ -248,28 +338,66 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                 camera.position.x += cameraPositionDiffX * .05;
                 camera.position.y += cameraPositionDiffY * .05;
 
-                currentFloorSceneRef.current?.traverse((child) => {
-                    if (child instanceof THREE.Mesh) {
-                        const material = child.material as THREE.MeshStandardMaterial;
-                        material.transparent = true;
-                        material.opacity = Math.min(1, material.opacity + 0.009);
-                        material.needsUpdate = true;
-                    }
-                });
+                if (t <= 0.3) {
+                    const fadeOutStrength = 1 - t / 0.3;
+                    preFloorSceneRef.current.traverse((child) => {
+                        if (child instanceof THREE.Mesh) {
+                            const material = child.material as THREE.MeshStandardMaterial;
+                            material.transparent = true;
+                            material.opacity = fadeOutStrength;
+                            material.needsUpdate = true;
+                        }
+                    });
+                } else {
+                    preFloorSceneRef.current.traverse((child) => {
+                        if (child instanceof THREE.Mesh) {
+                            const material = child.material as THREE.MeshStandardMaterial;
+                            material.transparent = true;
+                            material.opacity = 0;
+                            material.needsUpdate = true;
+                        }
+                    });
+                }
 
-                preFloorSceneRef.current?.traverse((child) => {
-                    if (child instanceof THREE.Mesh) {
-                        const material = child.material as THREE.MeshStandardMaterial;
-                        material.transparent = true;
-                        material.opacity = Math.max(0, material.opacity - 0.009);
-                        material.needsUpdate = true;
-                    }
-                });
+                if (t >= 0.7) {
+                    const fadeInStrength = (t - 0.7) / 0.3;
+                    currentFloorSceneRef.current.traverse((child) => {
+                        if (child instanceof THREE.Mesh) {
+                            const material = child.material as THREE.MeshStandardMaterial;
+                            material.transparent = true;
+                            material.opacity = Math.min(1, fadeInStrength);
+                            material.needsUpdate = true;
+                        }
+                    });
+                }
 
-                if (Math.abs(floorDistanceDiff) < 0.005) {
-                    camera.position.z = targetZ;
+                if (ShouldShowClouds.current) {
+                    cloudsRef.current[currentFloorRef.current < preFloorRef.current ? preFloorRef.current - 1 : preFloorRef.current].forEach((cloudMesh) => {
+                        const material = cloudMesh.material as THREE.MeshBasicMaterial;
+
+                        const distance = Math.abs(cloudMesh.position.z - camera.position.z);
+
+                        let opacity = 1 - distance / maxDistance;
+                        
+                        opacity = Math.max(minOpacity, Math.min(maxOpacity, opacity));
+
+                        material.opacity = opacity;
+
+                        let scale = 1 - distance / maxScaleDistance;
+
+                        scale = Math.max(minScale, Math.min(maxScale, scale));
+
+                        cloudMesh.scale.x = scale;
+                        cloudMesh.scale.y = scale;
+                        cloudMesh.scale.z = scale;
+                    })
+                }
+
+                if (Math.abs(t) >= 1) {
+                    cameraPositionZ.current = targetZ;
                     changeSwithichFloorHandler(false);
                     isSwitchingFloorRef.current = false;
+
                 }
             }
 
@@ -340,8 +468,6 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         if (!sceneRef.current || !containerRef.current) return;
 
         let isMounted = true;
-
-        // floorZsRef.current = [];
 
         const scene = sceneRef.current;
         const loader = new GLTFLoader();
@@ -463,16 +589,12 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
     }, []);
 
     useEffect(() => {
-
-        // if (!floorsRef.current[currentFloor] === undefined) return;
-
         const scene = sceneRef.current;
         if (!scene) return;
 
-        // floorZsRef.current = [];
-
         let isMounted = true;
         const loader = new GLTFLoader();
+        const textureLoader = new THREE.TextureLoader();
         const loadedFloors: THREE.Group[] = [];
 
         let tables: THREE.Object3D | null = null;
@@ -489,7 +611,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                 if (floor.hasMockupUpdate) {
 
                     floorsRef.current[floorIdx] = new THREE.Group;
-
+                    floorsRef.current[floorIdx].userData.floorIndex = floorIdx;
 
                     const newFloorInd = floors.length - 1;
 
@@ -503,14 +625,8 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                         if (!isMounted) return;
 
                         const sceneModal = gltf.scene;
-                        sceneModal.userData.floorIndex = floorIdx;
 
-                        floorsRef.current[floorIdx] = sceneModal;
                         loadedFloors.push(sceneModal);
-
-                        console.log('floorsRef.current', floorIdx, floorsRef.current)
-
-                        scene.add(sceneModal);
 
                         sceneModal.traverse((child) => {
                             if (child instanceof THREE.Mesh) {
@@ -580,11 +696,38 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
                         update(floorIdx, { ...floor, hasMockupUpdate: false });
 
+                        floorsRef.current[floorIdx].add(sceneModal);
+                        scene.add(floorsRef.current[floorIdx]);
+
+                        // Добавление облаков
+                        cloudsRef.current[floorIdx] = [];
+
+                        clouds.forEach((cloud, cloudIdx) => {
+
+                            textureLoader.load('/restaurant mockup/cloud1.png', (texture) => {
+                                const material = new THREE.MeshBasicMaterial({
+                                    map: texture,
+                                    transparent: true,
+                                    opacity: 0,
+                                });
+
+                                const geomerty = new THREE.PlaneGeometry(2, 1.5);
+                                const mesh = new THREE.Mesh(geomerty, material);
+                                mesh.position.set(cloud.x, cloud.y, sceneModal.position.z - (FLOOR_SPACING / 3.5) - cloud.z);
+                                scene.add(mesh);
+
+                                mesh.userData.reverse = false;
+                                mesh.scale.set(.5, .5, .5)
+
+                                cloudsRef.current[floorIdx][cloudIdx] = mesh;
+                            })
+                        })
                     }, undefined, function (error) {
                         console.error("Error occured", error);
                         return
                     });
                 }
+
 
                 floorZsRef.current[floorIdx] = currentZ;
                 distanceToNextFloorZ -= FLOOR_SPACING;
@@ -607,19 +750,14 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                 currentFloorSceneRef.current.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
                         child.castShadow = true;
-                        console.log('currentFloorSceneRef', currentFloorSceneRef)
                     }
                 })
 
                 preFloorSceneRef.current.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
                         child.castShadow = false;
-
-                        console.log('preFloorSceneRef', preFloorSceneRef)
                     }
                 })
-
-                console.log('http://localhost:3000', floorsRef.current)
             }
         }
     }, [floors, currentFloor])

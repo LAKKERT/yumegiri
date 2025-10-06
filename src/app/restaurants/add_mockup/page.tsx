@@ -468,11 +468,13 @@ export default function AddMockUP() {
     }
 
     const prevFloorHandler = () => {
+        if (isSwitchingFloor) return;
         if (currentFloor + 1 > 1) setCurrentFloor(prev => prev -= 1);
         setIsSwitchingFloor(true);
     }
 
     const nextFloorHandler = () => {
+        if (isSwitchingFloor) return;
         if (currentFloor + 1 < countOfFloors) setCurrentFloor(prev => prev += 1);
         setIsSwitchingFloor(true);
     }
