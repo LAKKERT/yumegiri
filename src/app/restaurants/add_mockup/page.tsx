@@ -9,12 +9,11 @@ import { saveRestaurantFiles } from "@/helpers/saveImage";
 import { useRouter } from "next/navigation";
 import { motion, animate, MotionValue, useMotionValue, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
 import styles from '@/app/styles/reservatoin/variables.module.scss';
-import { Places, Seats, Table } from "@/lib/interfaces/mockup";
+import { DeletedScene, Places, Seats, Table } from "@/lib/interfaces/mockup";
 import { supabase } from "@/db/supabaseConfig";
 import { FloorCounter } from "@/app/components/restaurant/floorCounter";
 import { AddRestaurantMockUp } from "@/app/components/restaurant/addRestaurant/addRestaurantMockUp";
 import { MainInfo } from "@/app/components/restaurant/addRestaurant/mainInfo";
-import { floor } from "lodash";
 
 export default function AddMockUP() {
     const [visibleMenu, setVisibleMenu] = useState<{ [key: string]: boolean }>({});
@@ -22,6 +21,8 @@ export default function AddMockUP() {
     const [mockUPUrl, setMockUPUrl] = useState<string | null>(null);
     const [currentFloor, setCurrentFloor] = useState<number>(0);
     const [isLastImage, setIsLastImage] = useState<boolean>(false);
+
+    const [deletedScene, setDeletedScene] = useState<DeletedScene | null>(null);
 
     const [tables, setTables] = useState<Table[]>([]);
 
@@ -207,7 +208,7 @@ export default function AddMockUP() {
                                                 number_of_seats: table.number_of_seats,
                                                 floor_id: floorData?.uuid
                                             });
-        
+
                                         if (tablesError) console.error(tablesError);
                                     }
                                 }
@@ -350,17 +351,18 @@ export default function AddMockUP() {
     };
 
     const handleDeleteFloor = () => {
-        remove(currentFloor);
-
-        if (visibleMenu) {
-            setVisibleMenu((prev) => {
-                const newArray = { ...prev }
-                floors[currentFloor].places.map(place => delete newArray[place.id])
-                return newArray
-            })
+        if (currentFloor === 0) {
+            // Первый этаж нельзя удалить.
+        } else {
+            remove(currentFloor);
+            setDeletedScene({
+                index: currentFloor,
+                isDeleted: true,
+            });
+            setIsSwitchingFloor(true);
+            setCurrentFloor(prev => prev - 1);
+            setCountOfFloors(prev => prev - 1);
         }
-
-        setCountOfFloors(prev => prev - 1);
     }
 
     useEffect(() => {
@@ -461,8 +463,7 @@ export default function AddMockUP() {
     };
 
     const onSelectedModal = (file: File) => {
-        console.log('currentfloor', currentFloor, file)
-        update(currentFloor, { ...floors[currentFloor], mockup: file })
+        update(currentFloor, { ...floors[currentFloor], mockup: file, hasMockupUpdate: true })
 
         setValue(`floors.${currentFloor}.mockup`, file);
     }
@@ -492,7 +493,13 @@ export default function AddMockUP() {
         setTables((prev) => [...prev, table])
     }
 
-    console.log('tables', tables)
+    const ChangeDeletedScene = () => {
+        setDeletedScene({
+            index: null,
+            isDeleted: false,
+        })
+
+    }
 
     return (
         <div className="flex justify-center min-h-[calc(100vh-100px)] h-full bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
@@ -550,28 +557,7 @@ export default function AddMockUP() {
 
                     <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={floors.length} y={y} />
 
-                    <div className="flex flex-row gap-5">
-                        {/* {floors.map((floor, index) => (
-                            <div key={floor.uuid} className="flex flex-col gap-2">
-                                <Controller
-                                    control={control}
-                                    name={`floors.${index}.mockup`}
-                                    render={({ field }) => (
-                                        <input
-                                            type="file"
-                                            accept=".glb,.gltf,.fbx,.obj" // пример форматов 3D
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0] || null;
-                                                field.onChange(file); // сохраняем именно File | null
-                                            }}
-                                        />
-                                    )}
-                                />
-                                <span>
-                                    {floor.mockup ? `Выбран: ${floor.mockup.name}` : "Файл не выбран"}
-                                </span>
-                            </div>
-                        ))} */}
+                    <div className="flex flex-row items-center gap-5">
                         {floors.map((floor, floorIdx) => (
                             <div key={floorIdx} className={`${floorIdx !== currentFloor ? "hidden" : "block"}`}>
                                 <input onChange={(e) => {
@@ -579,9 +565,9 @@ export default function AddMockUP() {
                                     if (file instanceof File) {
                                         onSelectedModal(file)
                                     }
-                                }} type="file" id="3Dfile" />
+                                }} type="file" id="3Dfile" className="hidden" />
 
-                                <label htmlFor="3Dfile" className={`${styles.restaurant_button}`}>Выбрать 3д файл</label>
+                                <label htmlFor="3Dfile" className={`h-full ${styles.restaurant_button}`}>Выбрать 3д файл</label>
                             </div>
                         ))}
 
@@ -589,7 +575,7 @@ export default function AddMockUP() {
                         <button type="button" onClick={handleDeleteFloor} className={`${styles.delete_button} bg-red-400`}>Удалить этаж</button>
                     </div>
 
-                    <AddRestaurantMockUp constraintsRef={constraintsRef} register={register} append={append} remove={remove} update={update} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} currentFloor={currentFloor} floors={floors} seatIsSelected={seatIsSelected} ChangeSeatState={ChangeSeatState} initTables={initTables} />
+                    <AddRestaurantMockUp constraintsRef={constraintsRef} register={register} append={append} remove={remove} update={update} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} currentFloor={currentFloor} floors={floors} seatIsSelected={seatIsSelected} ChangeSeatState={ChangeSeatState} initTables={initTables} deletedScene={deletedScene} ChangeDeletedScene={ChangeDeletedScene} />
 
                     <button type="submit" className={`cursor-pointer`}>
                         СОХРАНИТЬ

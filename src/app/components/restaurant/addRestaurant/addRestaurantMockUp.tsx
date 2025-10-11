@@ -6,9 +6,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { useRef, useState, useEffect, useCallback, RefObject } from "react";
 import { EffectComposer, RenderPass, OutlinePass, OutputPass, GLTFLoader } from "three/examples/jsm/Addons.js";
 import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
-import { Floors, Places, Table } from "@/lib/interfaces/mockup";
+import { DeletedScene, Places, Table } from "@/lib/interfaces/mockup";
 import { UseFormRegister, FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove, UseFieldArrayUpdate } from "react-hook-form";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { LongInEaseOut } from "@/helpers/easingFunctions";
 
 interface AddRestaurantMockUp {
     constraintsRef: RefObject<HTMLDivElement | null>;
@@ -23,18 +24,26 @@ interface AddRestaurantMockUp {
     seatIsSelected: boolean;
     ChangeSeatState: (mode: boolean, index: number) => void;
     initTables: (table: Table) => void;
+    deletedScene: DeletedScene | null;
+    ChangeDeletedScene: () => void;
 }
 
-export function AddRestaurantMockUp({ constraintsRef, register, append, remove, update, isSwitchingFloor, changeSwithichFloorHandler, currentFloor, floors, seatIsSelected, ChangeSeatState, initTables }: AddRestaurantMockUp) {
+export function AddRestaurantMockUp({ constraintsRef, register, append, remove, update, isSwitchingFloor, changeSwithichFloorHandler, currentFloor, floors, seatIsSelected, ChangeSeatState, initTables, deletedScene, ChangeDeletedScene }: AddRestaurantMockUp) {
     const aspectRatio = `1110 / ${600}`;
 
-    // const [distanceToNextFloorZ, setDistanceToNextFloorZ] = useState<number>(-10);
     const containerRef = useRef<HTMLDivElement>(null);
     const [mapFocus, setMapFocus] = useState<boolean>(false);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
-    const seatsArrayRef = useRef<THREE.Mesh[]>([]);
-    const tablesRef = useRef<THREE.Mesh[]>([]);
+    const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
+    const pointerRef = useRef<THREE.Vector2 | null>(null);
+    const raycasterRef = useRef<THREE.Raycaster | null>(null);
+    const renderPassRef = useRef<RenderPass | null>(null);
+    const outlinePassRef = useRef<OutlinePass | null>(null);
+    const outputPassRef = useRef<OutputPass | null>(null);
+    const composerRef = useRef<EffectComposer | null>(null);
+
+    const [sceneIsReady, setSceneIsReady] = useState(false);
 
     const startAnimation = useRef(0.0);
     const opacityStartAnimation = useRef(0.0)
@@ -54,8 +63,11 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
     const isSwitchingFloorRef = useRef(isSwitchingFloor);
 
+    const isDown = useRef<boolean>(false);
+    const startPosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     const lastMousePosition = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
     const isDragging = useRef<boolean>(false);
+    const isHoldClick = useRef<boolean>(false);
     const isClick = useRef<boolean>(false);
     const isZooming = useRef<boolean>(false);
     const zoomScale = useRef<number>(3);
@@ -66,14 +78,22 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         isSwitchingFloorRef.current = isSwitchingFloor;
         startAnimation.current = performance.now();
         opacityStartAnimation.current = performance.now();
-        // if (cameraRef.current) {
-        //     cameraPositionZ.current = cameraRef.current?.position.z;
-        // }
     }, [isSwitchingFloor]);
 
     const FLOOR_SPACING = 40;
     const DEFAULT_ZOOM = 3;
     const MAP_MOVEMENT_CONSTRAINTS = { minX: -3.5, maxX: 3.5, minY: -3.5, maxY: 3.5 };
+    const DRAG_THRESHOLD = 5;
+
+    const animationDuration = 2000;
+
+    const maxDistance = 20;
+    const minOpacity = 0;
+    const maxOpacity = 1;
+
+    const maxScaleDistance = 30;
+    const maxScale = 1;
+    const minScale = .5;
 
     const clouds = [
         {
@@ -130,24 +150,32 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
     const mouseDownHandler = useCallback((e: MouseEvent) => {
         if (e.button === 0) {
-            isDragging.current = true;
-            isClick.current = true;
+            isDown.current = true;
+            isDragging.current = false;
+            startPosition.current = { x: e.clientX, y: e.clientY };
             lastMousePosition.current = { x: e.clientX, y: e.clientY };
         }
-    }, [])
+    }, []);
 
-    const mouseUpHandler = useCallback(() => {
+    const mouseUpHandler = useCallback((e: MouseEvent) => {
+        isDown.current = false;
         isDragging.current = false;
-        isClick.current = false;
-    }, [])
+    }, []);
 
     const mouseMoveHandler = useCallback((e: MouseEvent) => {
-        if (!cameraRef || !isDragging) return;
+        if (!isDown.current || !cameraRef.current) return;
         const camera = cameraRef.current;
+
+        const deltaX = Math.abs(e.clientX - startPosition.current.x);
+        const deltaY = Math.abs(e.clientY - startPosition.current.y);
+        if (deltaX + deltaY > DRAG_THRESHOLD) {
+            isDragging.current = true;
+        }
 
         if (isDragging.current && lastMousePosition.current && camera) {
             const newX = e.clientX - lastMousePosition.current.x;
             const newY = e.clientY - lastMousePosition.current.y;
+            console.log(newX, newY)
 
             const nextX = camera.position.x - newX * 0.01;
             const nextY = camera.position.y + newY * 0.01;
@@ -157,7 +185,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
             lastMousePosition.current = { x: e.clientX, y: e.clientY };
         }
-    }, []);
+    }, [cameraRef]);
 
     useEffect(() => {
         if (mapFocus) document.body.style.overflow = "hidden";
@@ -168,46 +196,18 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         return Math.min(Math.max(value, min), max)
     }
 
-    function easeInQuad(t) {
-        return t * t;
-    }
-
-    function LongInEaseOut(t) {
-        return Math.pow(t, 2) * (3 - 2 * t);
-    }
-
-    function easeInOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    }
-
     useEffect(() => {
         if (!containerRef.current) return;
 
-        cameraRef.current = new THREE.PerspectiveCamera(
-            75,
-            containerRef.current.clientWidth / containerRef.current.clientHeight,
-            0.1,
-            1000
-        );
-        sceneRef.current = new THREE.Scene();
-
-        let scaleNumber = .5;
-
+        const renderer = rendererRef.current;
         const scene = sceneRef.current;
         const camera = cameraRef.current;
+        const raycaster = raycasterRef.current;
+        const pointer = pointerRef.current
+        const composer = composerRef.current;
+        const outlinePass = outlinePassRef.current;
 
-        const animationDuration = 2000;
-        const startTime = performance.now();
-
-        const maxDistanceToFloor = 40;
-
-        const maxDistance = 20;
-        const minOpacity = 0;
-        const maxOpacity = 1;
-
-        const maxScaleDistance = 30;
-        const maxScale = 1;
-        const minScale = .5;
+        if (!renderer || !scene || !camera || !raycaster || !pointer || !cameraPositionZ.current) return;
 
         const axesHelper = new THREE.AxesHelper(15);
         scene.add(axesHelper);
@@ -216,35 +216,9 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         stats.showPanel(0)
         document.body.appendChild(stats.dom);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-        renderer.setClearColor(0x000000, 0);
-        renderer.domElement.id = 'CanvasID';
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        renderer.toneMapping = THREE.NoToneMapping;
-        renderer.toneMappingExposure = 1.0;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        containerRef.current.appendChild(renderer.domElement);
-
-        zoomScale.current = 5
+        zoomScale.current = 3
         camera.zoom = zoomScale.current;
         camera.updateProjectionMatrix();
-
-        const raycaster = new THREE.Raycaster();
-        const pointer = new THREE.Vector2();
-
-        const composer = new EffectComposer(renderer);
-
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
-
-        const outlinePass = new OutlinePass(new THREE.Vector2(containerRef.current.clientWidth, containerRef.current.clientHeight), scene, camera)
-        outlinePass.renderToScreen = false;
-        composer.addPass(outlinePass);
-
-        const outputPass = new OutputPass();
-        composer.addPass(outputPass);
 
         if (outlinePass) {
             outlinePass.edgeStrength = 5;
@@ -253,30 +227,6 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
             outlinePass.hiddenEdgeColor.set(0xffffff);
         }
 
-        function onPointerMove(e: MouseEvent) {
-            const rect = renderer.domElement.getBoundingClientRect();
-
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            pointer.x = (x / rect.width) * 2 - 1;
-            pointer.y = -(y / rect.height) * 2 + 1;
-        }
-
-        function ScaleMapHandler(e: WheelEvent) {
-            if (e.deltaY > 0) {
-                isZooming.current = true;
-                zoomScale.current -= 1;
-            } else {
-                isZooming.current = true;
-                zoomScale.current += 1;
-            }
-        }
-
-        window.addEventListener("wheel", ScaleMapHandler);
-        window.addEventListener("pointermove", onPointerMove);
-
-        // camera.position.z = 10;
         camera.position.z = cameraPositionZ.current
 
         const animate = () => {
@@ -294,13 +244,13 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                 if (obj.parent instanceof THREE.Group) {
                     const objParent = obj.parent.children;
 
-
                     for (let i = 0; i < objParent.length; i++) {
                         if (objParent[i] instanceof THREE.Mesh && objParent[i].name.startsWith('Table') && (currentFloorRef.current === obj.parent.userData.floorIndex)) {
-                            if (isClick.current) {
+                            if (isClick.current && !isDragging.current) {
                                 // Рейкаст для столов
                                 // сделать debaunce т.к запускается слишком часто
                                 ChangeSeatState(true, obj.parent.userData.tableIndex);
+                                isClick.current = false;
                             }
                             selectedObjects.push(objParent[i]);
                         }
@@ -311,9 +261,6 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
             if (isSwitchingFloorRef.current && currentFloorSceneRef.current && preFloorSceneRef.current && cloudsRef.current && cameraPositionZ.current) {
                 isZooming.current = false;
                 zoomScale.current = 3;
-
-                const preFloor = preFloorSceneRef.current;
-                const nextFloor = currentFloorSceneRef.current;
 
                 const floor = currentFloorRef.current;
                 const targetZ = floorZsRef.current[floor] + 20;
@@ -378,7 +325,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                         const distance = Math.abs(cloudMesh.position.z - camera.position.z);
 
                         let opacity = 1 - distance / maxDistance;
-                        
+
                         opacity = Math.max(minOpacity, Math.min(maxOpacity, opacity));
 
                         material.opacity = opacity;
@@ -434,9 +381,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
         animate();
 
-        return () => {
-            renderer.dispose();
-
+        return (() => {
             if (stats) {
                 document.body.removeChild(stats.dom);
             }
@@ -444,10 +389,8 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
             if (containerRef.current && renderer.domElement.parentNode) {
                 containerRef.current.removeChild(renderer.domElement);
             }
-            window.removeEventListener("wheel", ScaleMapHandler);
-            window.removeEventListener("pointermove", onPointerMove);
-        };
-    }, []);
+        })
+    }, [sceneIsReady]);
 
     useEffect(() => {
         window.addEventListener('click', scrollOff);
@@ -463,14 +406,102 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         };
     }, [scrollOff, mouseDownHandler, mouseUpHandler, mouseMoveHandler]);
 
+    // Инициализирование камеры, сцены, outliner, raycaster;
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        cameraRef.current = new THREE.PerspectiveCamera(
+            75,
+            containerRef.current.clientWidth / containerRef.current.clientHeight,
+            0.1,
+            1000
+        );
+        sceneRef.current = new THREE.Scene();
+
+        rendererRef.current = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        rendererRef.current.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        rendererRef.current.setClearColor(0x000000, 0);
+        rendererRef.current.domElement.id = 'CanvasID';
+        rendererRef.current.domElement.style.borderRadius = `8px`
+        rendererRef.current.outputColorSpace = THREE.SRGBColorSpace;
+        rendererRef.current.toneMapping = THREE.NoToneMapping;
+        rendererRef.current.toneMappingExposure = 0;
+        rendererRef.current.shadowMap.enabled = true;
+        rendererRef.current.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        containerRef.current.appendChild(rendererRef.current.domElement);
+
+        composerRef.current = new EffectComposer(rendererRef.current);
+
+        raycasterRef.current = new THREE.Raycaster();
+        pointerRef.current = new THREE.Vector2();
+
+        renderPassRef.current = new RenderPass(sceneRef.current, cameraRef.current);
+        composerRef.current.addPass(renderPassRef.current);
+
+        outlinePassRef.current = new OutlinePass(new THREE.Vector2(containerRef.current.clientWidth, containerRef.current.clientHeight), sceneRef.current, cameraRef.current)
+        outlinePassRef.current.renderToScreen = false;
+        composerRef.current.addPass(outlinePassRef.current);
+
+        outputPassRef.current = new OutputPass();
+        composerRef.current.addPass(outputPassRef.current);
+
+        if (rendererRef.current, sceneRef.current, cameraRef.current, raycasterRef.current, pointerRef.current, composerRef.current, outlinePassRef.current) {
+            setSceneIsReady(true);
+        }
+
+        window.addEventListener("wheel", ScaleMapHandler);
+        window.addEventListener("pointermove", onPointerMove);
+
+        function onPointerMove(e: MouseEvent) {
+            if (!pointerRef.current || !rendererRef.current) return
+            const rect = rendererRef.current.domElement.getBoundingClientRect();
+
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            pointerRef.current.x = (x / rect.width) * 2 - 1;
+            pointerRef.current.y = -(y / rect.height) * 2 + 1;
+        }
+
+        function ScaleMapHandler(e: WheelEvent) {
+            if (e.deltaY > 0) {
+                isZooming.current = true;
+                zoomScale.current -= 1;
+            } else {
+                isZooming.current = true;
+                zoomScale.current += 1;
+            }
+        }
+
+
+
+        return () => {
+            if (!rendererRef.current) return;
+            rendererRef.current.dispose();
+            window.removeEventListener("wheel", ScaleMapHandler);
+            window.removeEventListener("pointermove", onPointerMove);
+        };
+    }, [])
+
+    function dumpObject(obj: THREE.Mesh, lines: string[] = [], isLast = true, prefix = '') {
+        const localPrefix = isLast ? '└─' : '├─';
+        lines.push(
+            `${prefix}${prefix ? localPrefix : ''}${obj.name || '*no-name*'} [${obj.type}]`
+        );
+        const newPrefix = prefix + (isLast ? "  " : "| ");
+        const lastNds = obj.children.length - 1;
+        obj.children.forEach((child, ndx) => {
+            const isLast = ndx === lastNds;
+            dumpObject(child, lines, isLast, newPrefix);
+        });
+        return lines;
+    }
+
     // Инициализирование сцены и посадочных мест
     useEffect(() => {
         if (!sceneRef.current || !containerRef.current) return;
-
-        let isMounted = true;
-
         const scene = sceneRef.current;
-        const loader = new GLTFLoader();
 
         const disposeScene = (object: THREE.Object3D) => {
             object.traverse((child) => {
@@ -489,24 +520,8 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
         const loadedFloors: THREE.Group[] = [];
 
-        function dumpObject(obj: THREE.Mesh, lines: string[] = [], isLast = true, prefix = '') {
-            const localPrefix = isLast ? '└─' : '├─';
-            lines.push(
-                `${prefix}${prefix ? localPrefix : ''}${obj.name || '*no-name*'} [${obj.type}]`
-            );
-            const newPrefix = prefix + (isLast ? "  " : "| ");
-            const lastNds = obj.children.length - 1;
-            obj.children.forEach((child, ndx) => {
-                const isLast = ndx === lastNds;
-                dumpObject(child, lines, isLast, newPrefix);
-            });
-            return lines;
-        }
-
-        const lightAreaWidth = 10;
-        const lightAreaHight = 10;
-        const intensity = 3;
-        const LightAreaColor = 0xFFA666;
+        const intensity = 10;
+        const LightAreaColor = 0xFFBB9C;
 
         const directionalLight = new THREE.DirectionalLight(LightAreaColor, intensity);
         directionalLight.position.set(-4.5, 4, -0.3);
@@ -530,7 +545,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         scene.add(directionalLight);
         scene.add(directionalLight.target);
 
-        const ambientLight = new THREE.AmbientLight(0x4c3c18, 0.5);
+        const ambientLight = new THREE.AmbientLight(0x60588B, 1);
         scene.add(ambientLight);
 
         const dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 5);
@@ -566,8 +581,6 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         setMainSceneIsLoaded(true);
 
         return () => {
-            isMounted = false;
-
             loadedFloors.forEach(disposeScene);
             loadedFloors.length = 0;
 
@@ -585,159 +598,196 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
             gui.destroy();
         }
-
     }, []);
 
     useEffect(() => {
         const scene = sceneRef.current;
         if (!scene) return;
 
-        let isMounted = true;
+        const isMounted = true;
         const loader = new GLTFLoader();
         const textureLoader = new THREE.TextureLoader();
         const loadedFloors: THREE.Group[] = [];
 
         let tables: THREE.Object3D | null = null;
         let walls: THREE.Object3D | null = null;
-        let distanceToNextFloorZ = -10;
 
-        const scenesHasUpdate = floors.some((item) => {
-            return item.hasMockupUpdate
-        });
+        if (deletedScene && deletedScene.isDeleted && deletedScene.index !== null) {
 
-        if (scenesHasUpdate) {
-            floors.forEach((floor, floorIdx) => {
-                const currentZ = distanceToNextFloorZ;
-                if (floor.hasMockupUpdate) {
+            scene.remove(floorsRef.current[deletedScene.index]);
 
-                    floorsRef.current[floorIdx] = new THREE.Group;
-                    floorsRef.current[floorIdx].userData.floorIndex = floorIdx;
+            if (cloudsRef.current[deletedScene.index]) {
+                cloudsRef.current[deletedScene.index].forEach(cloud => {
+                    scene.remove(cloud);
+                    cloud.geometry.dispose();
+                    const mat = cloud.material as THREE.MeshBasicMaterial;
+                    mat.dispose();
+                    if (mat.map) mat.map.dispose();
+                });
 
-                    const newFloorInd = floors.length - 1;
+                cloudsRef.current.splice(deletedScene.index, 1);
+            }
 
-                    let GLBModalURL: string = "";
+            floorsRef.current.splice(deletedScene.index, 1);
+            floorZsRef.current.splice(deletedScene.index, 1);
 
-                    if (floor.mockup !== null) {
-                        GLBModalURL = URL.createObjectURL(floor.mockup);
-                    }
+            if (deletedScene.index === currentFloorRef.current || deletedScene.index >= floorsRef.current.length) {
+                currentFloorRef.current = floorsRef.current.length > 0 ? floorsRef.current.length - 1 : 0;
+                if (floorsRef.current.length > 0) {
+                    isSwitchingFloorRef.current = true;
+                    changeSwithichFloorHandler(true);
+                }
+            }
 
-                    loader.load(GLBModalURL, function (gltf) {
-                        if (!isMounted) return;
-
-                        const sceneModal = gltf.scene;
-
-                        loadedFloors.push(sceneModal);
-
-                        sceneModal.traverse((child) => {
-                            if (child instanceof THREE.Mesh) {
-                                const material = child.material as THREE.MeshStandardMaterial;
-                                material.side = THREE.FrontSide;
-                                material.transparent = true;
-                                material.opacity = (floorIdx === currentFloorRef.current) ? 1 : 0;
-                                material.needsUpdate = true;
-
-                                child.castShadow = true;
-                                child.receiveShadow = true;
-                            }
-                        });
-
-                        tables = sceneModal.getObjectByName('Tables');
-                        walls = sceneModal.getObjectByName('Walls');
-
-                        if (tables) {
-                            let index = 0;
-                            tables.traverse((child) => {
-                                if (child instanceof THREE.Group) {
-                                    const uuid = uuidv4();
-                                    child.userData.floorIndex = floorIdx;
-                                    child.userData.tableIndex = index;
-                                    child.userData.uuid = uuid;
-                                    index++;
-
-                                    initTables({
-                                        id: uuid,
-                                        status: false,
-                                        floor_order: currentFloorRef.current,
-                                        number_of_seats: 0,
-                                    })
-                                };
-                            });
-                        };
-
-                        if (walls instanceof THREE.Object3D) {
-                            const wallsChildrenGroups = walls.children;
-                            for (const wallChildren of wallsChildrenGroups) {
-                                if (wallChildren instanceof THREE.Group) {
-                                    for (const wall of wallChildren.children) {
-                                        if (wall instanceof THREE.Mesh) {
-                                            wall.castShadow = true;
-                                            wall.receiveShadow = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (tables instanceof THREE.Object3D) {
-                            tables.traverse((child) => {
-                                if (child instanceof THREE.Mesh) {
-                                    child.castShadow = true;
-                                    child.receiveShadow = true;
-                                }
-                            });
-                        }
-
-                        sceneModal.rotateX(1.57 / 2);
-                        sceneModal.rotateY(1.57 / 2);
-
-                        sceneModal.position.set(0, 0, currentZ);
-
-                        const floorZ = floorZsRef.current[floorIdx] || 0;
-
-                        update(floorIdx, { ...floor, hasMockupUpdate: false });
-
-                        floorsRef.current[floorIdx].add(sceneModal);
-                        scene.add(floorsRef.current[floorIdx]);
-
-                        // Добавление облаков
-                        cloudsRef.current[floorIdx] = [];
-
-                        clouds.forEach((cloud, cloudIdx) => {
-
-                            textureLoader.load('/restaurant mockup/cloud1.png', (texture) => {
-                                const material = new THREE.MeshBasicMaterial({
-                                    map: texture,
-                                    transparent: true,
-                                    opacity: 0,
-                                });
-
-                                const geomerty = new THREE.PlaneGeometry(2, 1.5);
-                                const mesh = new THREE.Mesh(geomerty, material);
-                                mesh.position.set(cloud.x, cloud.y, sceneModal.position.z - (FLOOR_SPACING / 3.5) - cloud.z);
-                                scene.add(mesh);
-
-                                mesh.userData.reverse = false;
-                                mesh.scale.set(.5, .5, .5)
-
-                                cloudsRef.current[floorIdx][cloudIdx] = mesh;
-                            })
-                        })
-                    }, undefined, function (error) {
-                        console.error("Error occured", error);
-                        return
+            for (let i = deletedScene.index; i < floorsRef.current.length; i++) {
+                const shift = FLOOR_SPACING;
+                floorZsRef.current[i] += shift;
+                floorsRef.current[i].position.z += shift;
+                if (cloudsRef.current[i]) {
+                    cloudsRef.current[i].forEach(cloud => {
+                        cloud.position.z += shift;
                     });
                 }
 
+                floorsRef.current[i].userData.floorIndex = i;
+                floorsRef.current[i].traverse(child => {
+                    if (child instanceof THREE.Group && child.userData.floorIndex !== undefined) {
+                        child.userData.floorIndex = i;
+                    }
+                });
+            }
 
-                floorZsRef.current[floorIdx] = currentZ;
-                distanceToNextFloorZ -= FLOOR_SPACING;
-            })
+            ChangeDeletedScene();
         }
 
-    }, [mainSceneIsLoaded, floors])
+        floors.forEach((floor, floorIdx) => {
+            if (!floor.hasMockupUpdate) return;
+
+            if (floorsRef.current[floorIdx]) {
+                scene.remove(floorsRef.current[floorIdx]);
+                if (cloudsRef.current[floorIdx]) {
+                    cloudsRef.current[floorIdx].forEach(cloud => {
+                        scene.remove(cloud);
+                        cloud.geometry.dispose();
+                        const mat = cloud.material as THREE.MeshBasicMaterial;
+                        mat.dispose();
+                        if (mat.map) mat.map.dispose();
+                    });
+                    cloudsRef.current[floorIdx] = [];
+                }
+            }
+
+            floorsRef.current[floorIdx] = new THREE.Group();
+            floorsRef.current[floorIdx].userData.floorIndex = floorIdx;
+
+            let GLBModalURL: string | null = null;
+            if (floor.mockup !== null) {
+                GLBModalURL = URL.createObjectURL(floor.mockup);
+            }
+
+            const currentZ = -10 - floorIdx * FLOOR_SPACING;
+            floorZsRef.current[floorIdx] = currentZ;
+
+            if (GLBModalURL !== null) {
+                loader.load(GLBModalURL, function (gltf) {
+                    if (!isMounted) return;
+
+                    const sceneModal = gltf.scene;
+
+                    console.log(dumpObject(sceneModal).join('\n'));
+
+                    loadedFloors.push(sceneModal);
+
+                    sceneModal.traverse((child) => {
+                        if (child instanceof THREE.Mesh) {
+                            const material = child.material as THREE.MeshStandardMaterial;
+                            material.side = THREE.FrontSide;
+                            material.transparent = true;
+                            material.opacity = floorIdx === currentFloorRef.current ? 1 : 0;
+                            material.needsUpdate = true;
+
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        } else if (child instanceof THREE.Group) {
+                            child.traverse((subChild) => {
+                                if (subChild instanceof THREE.Mesh) {
+                                    const material = subChild.material as THREE.MeshStandardMaterial;
+                                    material.side = THREE.FrontSide;
+                                    material.transparent = true;
+                                    material.opacity = floorIdx === currentFloorRef.current ? 1 : 0;
+                                    material.needsUpdate = true;
+
+                                    subChild.castShadow = true;
+                                    subChild.receiveShadow = true;
+                                }
+                            });
+                        }
+                    });
+
+                    tables = sceneModal.getObjectByName('Tables') ?? null;
+                    walls = sceneModal.getObjectByName('Walls') ?? null;
+
+                    if (tables) {
+                        let index = 0;
+                        tables.traverse((child) => {
+                            if (child instanceof THREE.Group) {
+                                const uuid = uuidv4();
+                                child.userData.floorIndex = floorIdx;
+                                child.userData.tableIndex = index;
+                                child.userData.uuid = uuid;
+                                index++;
+
+                                initTables({
+                                    id: uuid,
+                                    status: false,
+                                    floor_order: currentFloorRef.current,
+                                    number_of_seats: 0,
+                                });
+                            }
+                        });
+                    }
+
+                    sceneModal.rotateX(1.57 / 2);
+                    sceneModal.rotateY(1.57 / 2);
+
+                    sceneModal.position.set(0, 0, currentZ);
+
+                    update(floorIdx, { ...floor, hasMockupUpdate: false });
+
+                    floorsRef.current[floorIdx].add(sceneModal);
+                    scene.add(floorsRef.current[floorIdx]);
+
+                    cloudsRef.current[floorIdx] = [];
+                    clouds.forEach((cloud, cloudIdx) => {
+                        textureLoader.load(cloud.path, (texture) => {
+                            const material = new THREE.MeshBasicMaterial({
+                                map: texture,
+                                transparent: true,
+                                opacity: 0,
+                            });
+
+                            const geometry = new THREE.PlaneGeometry(2, 1.5);
+                            const mesh = new THREE.Mesh(geometry, material);
+                            mesh.position.set(cloud.x, cloud.y, currentZ - FLOOR_SPACING / 3.5 - cloud.z);
+                            scene.add(mesh);
+
+                            mesh.userData.reverse = false;
+                            mesh.scale.set(0.5, 0.5, 0.5);
+
+                            cloudsRef.current[floorIdx].push(mesh);
+                        });
+                    });
+                }, undefined, function (error) {
+                    console.error("Error occurred", error);
+                });
+            }
+        });
+
+    }, [mainSceneIsLoaded, floors]);
 
 
     useEffect(() => {
+
         preFloorRef.current = currentFloorRef.current;
 
         currentFloorRef.current = currentFloor;
@@ -753,11 +803,13 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                     }
                 })
 
-                preFloorSceneRef.current.traverse((child) => {
-                    if (child instanceof THREE.Mesh) {
-                        child.castShadow = false;
-                    }
-                })
+                if (currentFloorRef.current !== preFloorRef.current) {
+                    preFloorSceneRef.current.traverse((child) => {
+                        if (child instanceof THREE.Mesh) {
+                            child.castShadow = false;
+                        }
+                    })
+                }
             }
         }
     }, [floors, currentFloor])
@@ -788,21 +840,11 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
             <div
                 ref={containerRef}
+                className="rounded"
                 style={{ width: 1110, height: 600 }}
                 onClick={(e) => scrollOff(e)}
             >
-
             </div>
-
-            {/* {seatIsSelected.length !== 0 ? (
-                <div>
-                    <h1>SEAT WAS SELECTED!!!!!!</h1>
-                    <p>{seatIsSelected}</p>
-                </div>
-            ) : (
-                null
-            )} */}
-
         </motion.div>
     )
 }

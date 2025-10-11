@@ -448,23 +448,16 @@ export default function Restaurants() {
                                 <input id="phone_number" {...register('phone_number')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} placeholder=" " type="text" />
                                 <label htmlFor="phone_number" className={`absolute left-1 top-0 ${styles.user_data_label} font-[family-name:var(--font-arimo)]`}>Номер телефона</label>
                             </div>
-
-                            {/* <div className="relative">
-                                <label htmlFor="booked_date" className={`absolute left-1 top-0 ${styles.user_data_label} font-[family-name:var(--font-arimo)]`}>Имя</label>
-                                <input id="booked_date" {...register('booked_date')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} type="text" />
-                            </div>
-                            <input {...register('phone_number')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} type="text" placeholder="Номер телефона" />
-                            <input {...register('booked_date')} className={`font-[family-name:var(--font-arimo)] cursor-pointer`} type="date" placeholder="Дата и время" /> */}
                             <button type="submit" className={`mx-auto ${styles.reservation_form_button}`}>ЗАБРОНИРОВАТЬ</button>
                         </div>
 
                         <div className={`flex flex-col items-center gap-2 ${isBooked ? '' : 'hidden'}`}>
-                            <p>Столик успешно зарезервирован. На ваш телефон в ближайшее время свяжется наш сотрудник для подтверждения бронирования.</p>
+                            <p className="text-white font-[family-name:var(--font-arimo)]">Столик успешно зарезервирован. На ваш телефон в ближайшее время свяжется наш сотрудник для подтверждения бронирования.</p>
                             <button type="button" onClick={() => {
                                 setIsBooked(false);
                                 setSeatIsSelected(false);
                             }}
-                                className="cursor-pointer">
+                                className={`cursor-pointer uppercase ${styles.reservation_form_button}`} >
                                 хорошо
                             </button>
                         </div>

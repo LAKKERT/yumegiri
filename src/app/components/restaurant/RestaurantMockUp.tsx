@@ -14,8 +14,6 @@ import { RenderPass, OutputPass } from "three/examples/jsm/Addons.js";
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { texture } from "three/src/nodes/TSL.js";
-
 
 interface RestaurantMockUp {
     constraintsRef: RefObject<HTMLDivElement | null>;
@@ -58,6 +56,8 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
     const isSwitchingFloorRef = useRef(isSwitchingFloor);
 
+    const isDown = useRef<boolean>(false);
+    const startPosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     const lastMousePosition = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
     const isDragging = useRef<boolean>(false);
     const isClick = useRef<boolean>(false);
@@ -71,6 +71,8 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
     const FLOOR_SPACING = 10;
     const DEFAULT_ZOOM = 3;
     const MAP_MOVEMENT_CONSTRAINTS = { minX: -1.5, maxX: 1.5, minY: -1.5, maxY: 1.5 };
+    const DRAG_THRESHOLD = 5;
+
 
     const scrollOff = useCallback((e: MouseEvent | PointerEvent | React.MouseEvent<HTMLDivElement>) => {
         if (e.target === document.getElementById('CanvasID')) {
@@ -82,24 +84,32 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
     const mouseDownHandler = useCallback((e: MouseEvent) => {
         if (e.button === 0) {
-            isDragging.current = true;
-            isClick.current = true;
+            isDown.current = true;
+            isDragging.current = false;
+            startPosition.current = { x: e.clientX, y: e.clientY };
             lastMousePosition.current = { x: e.clientX, y: e.clientY };
         }
-    }, [])
+    }, []);
 
-    const mouseUpHandler = useCallback(() => {
+    const mouseUpHandler = useCallback((e: MouseEvent) => {
+        isDown.current = false;
         isDragging.current = false;
-        isClick.current = false;
-    }, [])
+    }, []);
 
     const mouseMoveHandler = useCallback((e: MouseEvent) => {
-        if (!cameraRef || !isDragging) return;
+        if (!isDown.current || !cameraRef.current) return;
         const camera = cameraRef.current;
+
+        const deltaX = Math.abs(e.clientX - startPosition.current.x);
+        const deltaY = Math.abs(e.clientY - startPosition.current.y);
+        if (deltaX + deltaY > DRAG_THRESHOLD) {
+            isDragging.current = true;
+        }
 
         if (isDragging.current && lastMousePosition.current && camera) {
             const newX = e.clientX - lastMousePosition.current.x;
             const newY = e.clientY - lastMousePosition.current.y;
+            console.log(newX, newY)
 
             const nextX = camera.position.x - newX * 0.01;
             const nextY = camera.position.y + newY * 0.01;
@@ -109,7 +119,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
             lastMousePosition.current = { x: e.clientX, y: e.clientY };
         }
-    }, []);
+    }, [cameraRef]);
 
     useEffect(() => {
         if (mapFocus) document.body.style.overflow = "hidden";
@@ -152,7 +162,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         containerRef.current.appendChild(renderer.domElement);
 
-        zoomScale.current = 5
+        zoomScale.current = 3
         camera.zoom = zoomScale.current;
         camera.updateProjectionMatrix();
 
@@ -211,7 +221,6 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
             const selectedObjects: THREE.Object3D[] = [];
 
-
             for (let i = 0; i < intersects.length; i++) {
                 const obj = intersects[i].object;
 
@@ -220,11 +229,13 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
 
                     for (let i = 0; i < objParent.length; i++) {
                         if (objParent[i] instanceof THREE.Mesh && objParent[i].name.startsWith('Table') && (currentFloorRef.current === obj.parent.userData.floorIndex)) {
-                            if (isClick.current) {
-                                if (obj.parent.userData.tableId) {
+                            if (isDown.current && !isDragging.current) {
+                                if (obj.parent.userData.tableId && obj.parent.userData.status) {
+                                    console.log('Столик занят');
+                                } else {
                                     changeSelectedSeat(obj.parent.userData.tableId);
+                                    ChangeSeatState(true);
                                 }
-                                ChangeSeatState(true);
                             }
                             if (!obj.parent.userData.status) {
                                 outlinePass.visibleEdgeColor.set(0xffffff);
@@ -457,7 +468,7 @@ export function RestaurantMockUp({ constraintsRef, currentRestaurant, currentFlo
         let walls: THREE.Object3D | null = null;
         let distanceToNextFloorZ = -10;
 
-        
+
         currentRestaurant.floors.forEach((floor, floorIndex) => {
 
             const currentZ = distanceToNextFloorZ;

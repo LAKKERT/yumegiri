@@ -11,7 +11,7 @@ export function MenuPart() {
             </div>
             
             <div className="h-auto text-4xl">
-                <Link href="#" className="[text-shadow:0_4px_4px_rgb(0_0_0_/_0.5)]">МЕНЮ</Link>
+                <Link href="/menu" className="[text-shadow:0_4px_4px_rgb(0_0_0_/_0.5)]">МЕНЮ</Link>
             </div>
         </div>
     );

@@ -89,3 +89,8 @@ export interface ChangeSeatsStatus {
     place_id: string;
     status: boolean;
 }
+
+export interface DeletedScene {
+    index: number | null;
+    isDeleted?: boolean
+}
