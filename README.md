@@ -1,36 +1,51 @@
 <h1 align="center">ユメギリ　（yumegiri）</h1>
 
-## Содержание
-- [О проекте](#о-проекте)
-- [Технологии](#технологии)
-- [Структура проекта](#структура-проекта)
+**YumeGiri** — это интерактивный сайт для **бронирования столиков** в ресторане с **3D-картой** на базе Three.js.  
+Проект создан как pet-project для изучения трёхмерной графики и анимаций в вебе.
 
-## О проекте
+---
 
-<div>
-  <p>Yumegiri это Сайт для резервирования столиков с интерактивной картой ресторана, решающий такие проблемы как</p>
-    <ul>
-      <li>Визуальное представление столика, и информация для клиента</li>
-      <li>Система бронирования онлайн</li>
-      <li>Просмот статус столика (свободен/занят)</li>
-    </ul>
+## 🎯 Основная идея
 
-  **Мотивация:**
-  Проект создан для освоения TypeScript и Next.Js
-</div>
+YumeGiri решает несколько задач:
 
-## Технологии
+- Позволяет пользователю **наглядно видеть расположение столиков** в зале через интерактивную 3D-карту.  
+- Даёт возможность **забронировать столик онлайн**.  
+- Показывает **статус каждого столика** — свободен или занят.  
 
-* ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
-* ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-* ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-* ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-* ![supabase](https://img.shields.io/badge/supabase-000?style=for-the-badge&logo=supabase&logoColor=green)
-* ![sass](https://img.shields.io/badge/sass-CC6699?style=for-the-badge&logo=sass&logoColor=white)
+---
+
+## 💡 Мотивация
+
+Я создавал этот проект с целью **изучить и применить на практике Three.js**, а также разобраться в том,  
+как можно использовать 3D-сцены для визуализации данных и улучшения пользовательского опыта.  
+
+---
+
+## ⚙️ Технологии
+
+- ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white) — структура и логика приложения.  
+- ![THREE](https://img.shields.io/badge/three.js-000000?style=for-the-badge&logo=threedotjs&logoColor=white) — визуализация и взаимодействие с 3D-моделью ресторана.  
+- 💫 **Framer Motion** — анимации интерфейса и плавные переходы.
+- ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white) — стилизация статичных элементов.
+- ![supabase](https://img.shields.io/badge/supabase-000?style=for-the-badge&logo=supabase&logoColor=green) — база данных, хранение информации о столиках и бронированиях.
+
+---
+
+## 🚀 Статус проекта
+
+Проект находится в стадии **активной разработки**  
+и служит демонстрацией навыков работы с Three.js и современными UI-инструментами.  
+
+---
+
+## Demo
+
+---
 
 ## Структура проекта
 ```
-  Fox_Tale/
+  Yumegiri/
   ├── public                  # Ассеты (изображения, статические файлы)
   ├── src
   │   └── app                 # Все страницы и логика Next.js
