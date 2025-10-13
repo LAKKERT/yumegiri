@@ -2,14 +2,13 @@
 
 import { Header } from "@/app/components/header";
 import { v4 as uuidv4 } from 'uuid';
-import { useForm, useFieldArray, Controller } from "react-hook-form";
-import { useState, useRef, useCallback, useEffect, ChangeEvent } from "react";
-import Image from "next/image";
+import { useForm, useFieldArray } from "react-hook-form";
+import { useState, useRef, useEffect, ChangeEvent } from "react";
 import { saveRestaurantFiles } from "@/helpers/saveImage";
 import { useRouter } from "next/navigation";
-import { motion, animate, MotionValue, useMotionValue, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
+import { motion, animate, MotionValue, useMotionValue, useMotionValueEvent, useScroll } from "framer-motion";
 import styles from '@/app/styles/reservatoin/variables.module.scss';
-import { DeletedScene, Places, Seats, Table } from "@/lib/interfaces/mockup";
+import { DeletedScene, Places, Table } from "@/lib/interfaces/mockup";
 import { supabase } from "@/db/supabaseConfig";
 import { FloorCounter } from "@/app/components/restaurant/floorCounter";
 import { AddRestaurantMockUp } from "@/app/components/restaurant/addRestaurant/addRestaurantMockUp";
@@ -149,13 +148,17 @@ export default function AddMockUP() {
         try {
             const formData = new FormData();
 
+            const galleryArray = Array.from(gallery);
+
+            const galleryProperties = galleryArray.map(file => getFileProperties(file));
+            const galleryDataPromises = galleryArray.map(file => processData(file));
+            const galleryData = await Promise.all(galleryDataPromises);
+
+            saveRestaurantFiles(galleryData, galleryProperties);
+
             data.floors.forEach((floor) => {
                 if (floor.mockup) {
-                    // если у тебя mockup = File
                     formData.append("files", floor.mockup);
-
-                    // если mockup = File[], например input type="file" multiple
-                    // floor.mockup.forEach((f) => formData.append("files", f));
                 }
             });
 
@@ -184,6 +187,16 @@ export default function AddMockUP() {
 
                     if (restaurantError) console.error(restaurantError);
                     else {
+                        for (const image of galleryProperties) {
+                            const { error: galleryError } = await supabase
+                                .from('gallery')
+                                .insert({
+                                    restaurant_id: restaurant_id.id,
+                                    image: image
+                                });
+                            if (galleryError) console.error(galleryError);
+                        }
+
                         for (let i = 0; i < data.floors.length; i++) {
                             const { data: floorData, error: floorsError } = await supabase
                                 .from('floors')
@@ -206,6 +219,7 @@ export default function AddMockUP() {
                                                 id: table.id,
                                                 status: table.status,
                                                 number_of_seats: table.number_of_seats,
+                                                order: table.order,
                                                 floor_id: floorData?.uuid
                                             });
 
@@ -505,7 +519,7 @@ export default function AddMockUP() {
         <div className="flex justify-center min-h-[calc(100vh-100px)] h-full bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
             <Header />
 
-            <motion.div
+            {/* <motion.div
                 initial={{
                     backgroundColor: 'transparent'
                 }}
@@ -530,7 +544,7 @@ export default function AddMockUP() {
                         </div>
                     </form>
                 )}
-            </motion.div>
+            </motion.div> */}
 
             <form onSubmit={handleSubmit(onSubmit)}>
                 <div className={`relative max-w-[1110px] h-full w-full flex flex-col gap-4 items-center`}>
@@ -575,7 +589,7 @@ export default function AddMockUP() {
                         <button type="button" onClick={handleDeleteFloor} className={`${styles.delete_button} bg-red-400`}>Удалить этаж</button>
                     </div>
 
-                    <AddRestaurantMockUp constraintsRef={constraintsRef} register={register} append={append} remove={remove} update={update} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} currentFloor={currentFloor} floors={floors} seatIsSelected={seatIsSelected} ChangeSeatState={ChangeSeatState} initTables={initTables} deletedScene={deletedScene} ChangeDeletedScene={ChangeDeletedScene} />
+                    <AddRestaurantMockUp constraintsRef={constraintsRef} register={register} update={update} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} currentFloor={currentFloor} floors={floors} ChangeSeatState={ChangeSeatState} initTables={initTables} deletedScene={deletedScene} ChangeDeletedScene={ChangeDeletedScene} />
 
                     <button type="submit" className={`cursor-pointer`}>
                         СОХРАНИТЬ

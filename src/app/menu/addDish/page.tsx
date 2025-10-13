@@ -12,7 +12,7 @@ import { useCategories } from "@/lib/hooks/useCategories";
 import { supabase } from "@/db/supabaseConfig";
 
 const validationForm = Yup.object().shape({
-    name: Yup.string().min(3, 'Минимальное количество символов 3').max(12, 'максимальное количество символов 12').required("Поле должно быть заполнено"),
+    name: Yup.string().min(3, 'Минимальное количество символов 3').max(55, 'максимальное количество символов 12').required("Поле должно быть заполнено"),
     description: Yup.string().min(6, 'Минимальное количество символов 6').required("Поле должно быть заполнено"),
     weight: Yup.number().required("Поле должно быть заполнено"),
     price: Yup.number().required("Поле должно быть заполнено"),
@@ -58,6 +58,7 @@ export default function AppendDish() {
     //     getCategories();
     // }, [])
 
+    console.log(errors)
     const onSubmit = async (data: AddDish) => {
         if (!selectedFile) {
             console.log('no files');

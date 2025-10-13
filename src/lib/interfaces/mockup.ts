@@ -54,7 +54,7 @@ export interface Table {
 
 export interface Floors {
     uuid: string;
-    mockup: File | null;
+    mockup: File | string | null;
     order: number;
     hasMockupUpdate: boolean;
     mockup_height?: number;

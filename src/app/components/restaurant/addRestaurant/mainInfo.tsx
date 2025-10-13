@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import styles from '@/app/styles/reservatoin/variables.module.scss';
-import { RefObject, useEffect, useState } from 'react';
+import { RefObject } from 'react';
 import { MotionValue } from "motion";
 import { AnimatePresence, motion } from 'framer-motion';
 import { Places } from '@/lib/interfaces/mockup';

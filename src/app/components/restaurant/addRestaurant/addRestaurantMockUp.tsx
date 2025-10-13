@@ -7,28 +7,25 @@ import { useRef, useState, useEffect, useCallback, RefObject } from "react";
 import { EffectComposer, RenderPass, OutlinePass, OutputPass, GLTFLoader } from "three/examples/jsm/Addons.js";
 import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 import { DeletedScene, Places, Table } from "@/lib/interfaces/mockup";
-import { UseFormRegister, FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove, UseFieldArrayUpdate } from "react-hook-form";
+import { UseFormRegister, FieldArrayWithId, UseFieldArrayUpdate } from "react-hook-form";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { LongInEaseOut } from "@/helpers/easingFunctions";
 
 interface AddRestaurantMockUp {
     constraintsRef: RefObject<HTMLDivElement | null>;
-    register: UseFormRegister<Places>;
-    append: UseFieldArrayAppend<Places, "floors">;
-    remove: UseFieldArrayRemove;
     update: UseFieldArrayUpdate<Places, "floors">;
+    register: UseFormRegister<Places>;
     isSwitchingFloor: boolean;
     changeSwithichFloorHandler: (mode: boolean) => void;
     currentFloor: number;
     floors: FieldArrayWithId<Places, "floors", "id">[];
-    seatIsSelected: boolean;
     ChangeSeatState: (mode: boolean, index: number) => void;
     initTables: (table: Table) => void;
     deletedScene: DeletedScene | null;
     ChangeDeletedScene: () => void;
 }
 
-export function AddRestaurantMockUp({ constraintsRef, register, append, remove, update, isSwitchingFloor, changeSwithichFloorHandler, currentFloor, floors, seatIsSelected, ChangeSeatState, initTables, deletedScene, ChangeDeletedScene }: AddRestaurantMockUp) {
+export function AddRestaurantMockUp({ constraintsRef, update, isSwitchingFloor, changeSwithichFloorHandler, currentFloor, floors, ChangeSeatState, initTables, deletedScene, ChangeDeletedScene }: AddRestaurantMockUp) {
     const aspectRatio = `1110 / ${600}`;
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -67,7 +64,6 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
     const startPosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     const lastMousePosition = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
     const isDragging = useRef<boolean>(false);
-    const isHoldClick = useRef<boolean>(false);
     const isClick = useRef<boolean>(false);
     const isZooming = useRef<boolean>(false);
     const zoomScale = useRef<number>(3);
@@ -123,7 +119,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         {
             x: 1.5,
             y: 2.5,
-            z: 12,
+            z: 10,
             path: '/restaurant mockup/cloud5.png',
         },
         {
@@ -157,7 +153,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         }
     }, []);
 
-    const mouseUpHandler = useCallback((e: MouseEvent) => {
+    const mouseUpHandler = useCallback(() => {
         isDown.current = false;
         isDragging.current = false;
     }, []);
@@ -484,19 +480,20 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         };
     }, [])
 
-    function dumpObject(obj: THREE.Mesh, lines: string[] = [], isLast = true, prefix = '') {
-        const localPrefix = isLast ? '└─' : '├─';
-        lines.push(
-            `${prefix}${prefix ? localPrefix : ''}${obj.name || '*no-name*'} [${obj.type}]`
-        );
-        const newPrefix = prefix + (isLast ? "  " : "| ");
-        const lastNds = obj.children.length - 1;
-        obj.children.forEach((child, ndx) => {
-            const isLast = ndx === lastNds;
-            dumpObject(child, lines, isLast, newPrefix);
-        });
-        return lines;
-    }
+    // Развёртывание древа сцены
+    // function dumpObject(obj: THREE.Mesh, lines: string[] = [], isLast = true, prefix = '') {
+    //     const localPrefix = isLast ? '└─' : '├─';
+    //     lines.push(
+    //         `${prefix}${prefix ? localPrefix : ''}${obj.name || '*no-name*'} [${obj.type}]`
+    //     );
+    //     const newPrefix = prefix + (isLast ? "  " : "| ");
+    //     const lastNds = obj.children.length - 1;
+    //     obj.children.forEach((child, ndx) => {
+    //         const isLast = ndx === lastNds;
+    //         dumpObject(child, lines, isLast, newPrefix);
+    //     });
+    //     return lines;
+    // }
 
     // Инициализирование сцены и посадочных мест
     useEffect(() => {
@@ -565,14 +562,13 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
         onChange();
 
-        function makeXYZGUI(gui, vector3, name, onChangeFn) {
+        function makeXYZGUI(gui: GUI, vector3: THREE.Vector3, name: string, onChangeFn: () => void) {
 
             const folder = gui.addFolder(name);
             folder.add(vector3, 'x', - 10, 10).onChange(onChangeFn);
             folder.add(vector3, 'y', 0, 10).onChange(onChangeFn);
             folder.add(vector3, 'z', - 10, 10).onChange(onChangeFn);
             folder.open();
-
         }
 
         makeXYZGUI(gui, directionalLight.position, 'position', onChange);
@@ -610,7 +606,6 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
         const loadedFloors: THREE.Group[] = [];
 
         let tables: THREE.Object3D | null = null;
-        let walls: THREE.Object3D | null = null;
 
         if (deletedScene && deletedScene.isDeleted && deletedScene.index !== null) {
 
@@ -694,8 +689,6 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
 
                     const sceneModal = gltf.scene;
 
-                    console.log(dumpObject(sceneModal).join('\n'));
-
                     loadedFloors.push(sceneModal);
 
                     sceneModal.traverse((child) => {
@@ -725,7 +718,6 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                     });
 
                     tables = sceneModal.getObjectByName('Tables') ?? null;
-                    walls = sceneModal.getObjectByName('Walls') ?? null;
 
                     if (tables) {
                         let index = 0;
@@ -741,6 +733,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                                     id: uuid,
                                     status: false,
                                     floor_order: currentFloorRef.current,
+                                    order: index,
                                     number_of_seats: 0,
                                 });
                             }
@@ -758,7 +751,7 @@ export function AddRestaurantMockUp({ constraintsRef, register, append, remove, 
                     scene.add(floorsRef.current[floorIdx]);
 
                     cloudsRef.current[floorIdx] = [];
-                    clouds.forEach((cloud, cloudIdx) => {
+                    clouds.forEach((cloud) => {
                         textureLoader.load(cloud.path, (texture) => {
                             const material = new THREE.MeshBasicMaterial({
                                 map: texture,

@@ -4,7 +4,7 @@ import { useRestaurants } from "@/lib/hooks/useRestaurants";
 import { useEffect, useRef, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { motion, animate, MotionValue, useMotionValue, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
-import { Floors, Places, Seats } from "@/lib/interfaces/mockup";
+import { Floors, Places, Seats, Table } from "@/lib/interfaces/mockup";
 import { Reservation } from "@/lib/interfaces/reservation";
 import { MainInfo } from "@/app/components/restaurant/mainInformation";
 import { RestaurantEditForm, EditRestaurantMockUp } from "@/app/components/restaurant/editRestaurantData";
@@ -418,11 +418,11 @@ export default function Restaurants() {
         <div className="flex justify-center mt-[100px] font-[family-name:var(--font-pacifico)] min-h-[calc(100vh-100px)] bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
             <Header />
             <div className="flex flex-col items-center">
-                {userRole === 'admin' || userRole === 'waiter' ? (
+                {/* {userRole === 'admin' || userRole === 'waiter' ? (
                     <RestaurantToolBar changeEditMode={changeEditMode} restaurantId={currentRestaurant?.id} />
                 ) : (
                     null
-                )}
+                )} */}
                 <motion.div
                     initial={{
                         backgroundColor: 'transparent'
@@ -467,8 +467,7 @@ export default function Restaurants() {
                 <form onSubmit={editFormSubmit(onSubmitEditForm)}>
                     <div className={`relative max-w-[1110px] h-full w-full flex flex-col gap-4 items-center`}>
                         <div className="max-w-[760px] w-full flex flex-col items-center gap-2 py-2 rounded-2xl text-black px-6">
-                            <p className="text-lg text-center text-balance text-white uppercase">Выберите кафе и место на схеме кафе, которое хотите зарезервировать. <br />И заполните форму.</p>
-                            {/* <h3 className="uppercase"></h3> */}
+                            <p className="text-lg text-center text-balance text-white uppercase font-[family-name:var(--font-poiret)]">Выберите кафе и место на схеме кафе, которое хотите зарезервировать. <br />И заполните форму.</p>
                             <div className="flex flex-wrap gap-4">
                                 {restaurants.map((restaurant, restaurantIndex) => (
                                     <button type="button" key={restaurant.id} disabled={seatIsSelected ? true : false} onClick={() => changeRestaurantHandler(restaurantIndex)} className={`w-[160px] h-[50px] flex items-center justify-center border-2 border-[#ff8f66] bg-[#ff8f66] rounded-lg transform transition-colors duration-300 ease-in-out ${currentRestaurant?.id === restaurant.id ? 'bg-black text-[#ff8f66]' : ''} cursor-pointer`}>
@@ -516,9 +515,9 @@ export default function Restaurants() {
                                         className="flex flex-col gap-3 text-center"
                                     >
                                         <h2 className="text-xl uppercase">{currentRestaurant?.restaurant_name}</h2>
-                                        <p className={`text-center text-balance text-3xl font-[family-name:var(--font-marck)]`}>{currentRestaurant?.description}</p>
-                                        <span className="text-2xl font-[family-name:var(--font-marck)]">Адрес: {currentRestaurant?.address}</span>
-                                        <span className="text-2xl font-[family-name:var(--font-marck)]">Контакты: {currentRestaurant?.phone_number}</span>
+                                        <p className={`text-center text-balance text-2xl font-[family-name:var(--font-poiret)]`}>{currentRestaurant?.description}</p>
+                                        <span className="text-2xl font-[family-name:var(--font-poiret)]">Адрес: {currentRestaurant?.address}</span>
+                                        <span className="text-2xl font-[family-name:var(--font-poiret)]">Контакты: {currentRestaurant?.phone_number}</span>
                                     </motion.div>
                                 </AnimatePresence>
                             </div>
@@ -535,7 +534,7 @@ export default function Restaurants() {
                         {isEditMode && currentRestaurant ? (
                             <EditRestaurantMockUp restaurantDetail={currentRestaurant} register={editFormRegister} fields={fields} append={append} remove={remove} update={update} replace={replace} isSwitchingFloor={isSwitchingFloor} />
                         ) : (
-                            <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} currentFloor={currentFloor} changeSelectedSeat={changeSelectedSeat} seatIsSelected={seatIsSelected} control={control} seatsRefs={seatsRefs} visibleMenu={visibleMenu} x={x} ChangeSeatState={ChangeSeatState} onClickHandler={onClickHandler} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} />
+                            <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} update={update} currentFloor={currentFloor} changeSelectedSeat={changeSelectedSeat} ChangeSeatState={ChangeSeatState} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} />
                         )}
 
                         <button type="submit" className={`cursor-pointer ${isEditMode ? '' : 'hidden'}`}>

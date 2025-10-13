@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
-import { Pacifico, Kiwi_Maru, Marck_Script, Klee_One, Arimo } from "next/font/google";
+import { Pacifico, Kiwi_Maru, Marck_Script, Klee_One, Arimo, Poiret_One } from "next/font/google";
 import "./globals.css";
+
+const poiret = Poiret_One({
+    variable: '--font-poiret',
+    subsets: ['latin', 'cyrillic'],
+    weight: '400',
+    style: 'normal'
+})
 
 const pacifico = Pacifico({
     variable: '--font-pacifico',
@@ -46,7 +53,7 @@ export default function RootLayout({
     return (
         <html lang="en" className="scroll-smooth no-touch">
             <body
-                className={`${pacifico.variable} ${kiwimaru.variable} ${marck.variable} ${klee.variable} ${arimo.variable} antialiased`}
+                className={`${pacifico.variable} ${kiwimaru.variable} ${marck.variable} ${klee.variable} ${arimo.variable} ${poiret.variable} antialiased`}
             >
                 {children}
             </body>

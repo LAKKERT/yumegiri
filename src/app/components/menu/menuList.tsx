@@ -5,6 +5,7 @@ import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { supabase } from "@/db/supabaseConfig";
 import { Categories } from "@/lib/interfaces/menu";
+import { useState } from "react";
 
 const validationForm = Yup.object().shape({
     name: Yup.string().min(3, 'Название должно содержать минимум 3 символа').required('Поле обязательно для заполнения'),
@@ -16,6 +17,7 @@ interface ReciveData {
 }
 
 export function MenuList({categories, userRole}: ReciveData) {
+    const [currentCat, setCurrentCat] = useState<string>('');
     const { register, handleSubmit, formState: { errors } } = useForm<{name: string}>({
         resolver: yupResolver(validationForm)
     });
@@ -53,10 +55,10 @@ export function MenuList({categories, userRole}: ReciveData) {
         <div className="h-[500px] min-w-[300px] hidden md:flex flex-col items-center p-3 text-black bg-white rounded-2xl shadow-xl">
             <h2>МЕНЮ</h2>
 
-            <div>
+            <div className={`w-full flex flex-col gap-3 font-light text-xl`}>
                 {categories.length > 0 && categories.map((category) => (
-                    <div className="text-base" key={category.id}>
-                        <a href={`#${category.id}`}>{category.name}</a>
+                    <div key={category.id}>
+                        <a className={`${currentCat === category.name ? 'text-[#bb4d00]' : ''}`} href={`#${category.id}`} onClick={() => setCurrentCat(category.name)}>{category.name}</a>
                     </div>
                 ))}
             </div>

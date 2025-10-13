@@ -64,10 +64,15 @@ export default function Menu() {
     }, [])
 
     useEffect(() => {
-        const cats = categories.filter(category =>
-            dishesData.some(dish => dish.category_id === category.id)
-        );
-        setFilteredCategories(cats);
+        if (userRole !== 'user') {
+            setFilteredCategories(categories);
+        }else {
+            const cats = categories.filter(category =>
+                dishesData.some(dish => dish.category_id === category.id)
+            );
+            setFilteredCategories(cats);
+
+        }
     }, [categories, dishesData]);
 
     const handleDeleteDishes = async (dishIds: (number[])) => {
@@ -138,7 +143,7 @@ export default function Menu() {
                     </div>
 
                     <div className="w-full">
-                        <div className="flex gap-4">
+                        <div className={`flex gap-4 ${!userRole || userRole === 'user' ? 'hidden' : null}`}>
                             <button type="button" className="cursor-pointer"
                                 onClick={() => {
                                     setDeleteMode(prev => !prev)
@@ -186,12 +191,13 @@ export default function Menu() {
                                                         }
                                                     }}
                                                 >
-                                                    <div className="relative w-[300px] h-[300px] lg:h-full flex-shrink-0">
+                                                    <div className="flex relative w-[300px] h-[300px] lg:h-full flex-shrink-0">
                                                         <Image
                                                             src={`http://localhost:3000/${dish.image}`}
                                                             alt="Dish"
-                                                            fill
-                                                            objectFit="contain"
+                                                            width={300}
+                                                            height={250}
+                                                            className="object-cover"
                                                             quality={100}
                                                         />
                                                     </div>

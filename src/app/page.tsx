@@ -4,13 +4,10 @@ import { Header } from "@/app/components/header";
 import { InrtoductionPart } from "@/app/components/home/introductionPart";
 import { ReservationPart } from "@/app/components/home/reservationPart";
 import { MenuPart } from "@/app/components/home/menuPart";
-import { PopularFood } from "@/app/components/home/popularFood";
 import Image from "next/image";
-import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 
 export default function Home() {
-
     const { scrollYProgress } = useScroll();
 
     const scale = useTransform(scrollYProgress, [0, 0.1], [1, 1.5]);
@@ -43,6 +40,16 @@ export default function Home() {
                         <Image src={'/home/cloud_5.png'} alt="cloud" width={250} height={115} />
                     </motion.div>
 
+                    <motion.div
+                        initial={{ opacity: 0}}
+                        className="fixed right-25 top-70 origin-bottom"
+                        style={{
+                            opacity: useTransform(scrollYProgress, [0.1, 0.15, 0.21], [0, .5, 0]),
+                            scale: useTransform(scrollYProgress, [0.1, 0.15, 0.25], [1, 1.25, 1.5])
+                        }}
+                    >
+                        <Image src={'/restaurant mockup/cloud4.png'} alt="cloud" width={250} height={115} />
+                    </motion.div>
 
                     <motion.div
                         initial={{ opacity: 0}}
