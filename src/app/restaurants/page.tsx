@@ -17,8 +17,14 @@ import { useCheckUserRole } from "@/lib/hooks/useCheckRole";
 import styles from '@/app/styles/reservatoin/variables.module.scss';
 import { RestaurantToolBar } from '@/app/components/restaurant/toolBar';
 import moment from "moment";
+import Loader from "../components/loader";
 
 export default function Restaurants() {
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [dataIsFetched, setDataIsFetched] = useState(false);
+    const [canvasIsReady, setCanvasIsReady] = useState(false);
+
     const { userRole } = useCheckUserRole();
 
     const { control, register, handleSubmit, formState: { errors }, reset, setValue } = useForm<Reservation>();
@@ -414,10 +420,32 @@ export default function Restaurants() {
         setIsSwitchingFloor(mode);
     };
 
+    const changeIsLoading = () => {
+        setCanvasIsReady(true);
+    };
+
+    useEffect(() => {
+        if (restaurants) {
+            setDataIsFetched(true);
+        }
+    }, [restaurants]);
+
+    useEffect(() => {
+        if (canvasIsReady && dataIsFetched) {
+            console.log(canvasIsReady, dataIsFetched)
+            setIsLoading(false);
+        }
+    }, [canvasIsReady, dataIsFetched])
+
     return (
         <div className="flex justify-center mt-[100px] font-[family-name:var(--font-pacifico)] min-h-[calc(100vh-100px)] bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
             <Header />
-            <div className="flex flex-col items-center">
+
+            <div className={`fixed w-full z-30 pointer-events-none`} >
+                <Loader isLoading={isLoading} />
+            </div>
+
+            <div className={`flex flex-col items-center ${isLoading ? "opacity-0" : 'opacity-100'}`}>
                 {/* {userRole === 'admin' || userRole === 'waiter' ? (
                     <RestaurantToolBar changeEditMode={changeEditMode} restaurantId={currentRestaurant?.id} />
                 ) : (
@@ -531,11 +559,13 @@ export default function Restaurants() {
 
                         <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} seatIsSelected={seatIsSelected} isEditMode={isEditMode} y={y} />
 
-                        {isEditMode && currentRestaurant ? (
+                        {/* {isEditMode && currentRestaurant ? (
                             <EditRestaurantMockUp restaurantDetail={currentRestaurant} register={editFormRegister} fields={fields} append={append} remove={remove} update={update} replace={replace} isSwitchingFloor={isSwitchingFloor} />
                         ) : (
-                            <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} update={update} currentFloor={currentFloor} changeSelectedSeat={changeSelectedSeat} ChangeSeatState={ChangeSeatState} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} />
-                        )}
+                            <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} update={update} currentFloor={currentFloor} changeSelectedSeat={changeSelectedSeat} ChangeSeatState={ChangeSeatState} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} changeIsLoading={changeIsLoading} />
+                        )} */}
+                        
+                        <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} update={update} currentFloor={currentFloor} changeSelectedSeat={changeSelectedSeat} ChangeSeatState={ChangeSeatState} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} changeIsLoading={changeIsLoading} />
 
                         <button type="submit" className={`cursor-pointer ${isEditMode ? '' : 'hidden'}`}>
                             СОХРАНИТЬ

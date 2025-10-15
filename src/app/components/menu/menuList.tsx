@@ -52,13 +52,13 @@ export function MenuList({categories, userRole}: ReciveData) {
     }
 
     return (
-        <div className="h-[500px] min-w-[300px] hidden md:flex flex-col items-center p-3 text-black bg-white rounded-2xl shadow-xl">
-            <h2>МЕНЮ</h2>
+        <div className="h-[500px] min-w-[300px] hidden md:flex flex-col items-center gap-2 p-3 text-black bg-white rounded-2xl shadow-xl">
+            <h2>КАТЕГОРИИ</h2>
 
-            <div className={`w-full flex flex-col gap-3 font-light text-xl`}>
+            <div className={`w-full flex flex-col gap-2 font-light text-xl`}>
                 {categories.length > 0 && categories.map((category) => (
                     <div key={category.id}>
-                        <a className={`${currentCat === category.name ? 'text-[#bb4d00]' : ''}`} href={`#${category.id}`} onClick={() => setCurrentCat(category.name)}>{category.name}</a>
+                        <a className={`font-[family-name:var(--font-pacifico)] underline hover:text-[#bb4d00] transition-colors duration-300 ${currentCat === category.name ? 'text-[#bb4d00]' : ''}`} href={`#${category.id}`} onClick={() => setCurrentCat(category.name)}>{category.name}</a>
                     </div>
                 ))}
             </div>
