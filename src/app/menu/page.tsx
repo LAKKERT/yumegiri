@@ -5,10 +5,10 @@ import { MenuList } from "@/app/components/menu/menuList";
 import { DishDetail } from "../components/menu/dishDetail";
 import { EditDish } from "../components/menu/editDish";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { supabase } from "@/db/supabaseConfig";
+import { createClient } from "../utils/supabase/client";
 import { Categories, Dishes } from "@/lib/interfaces/menu";
 import { useCategories } from "@/lib/hooks/useCategories";
 import { useCheckUserRole } from "@/lib/hooks/useCheckRole";
@@ -18,6 +18,7 @@ export default function Menu() {
     const [isLoading, setIsLoading] = useState(true);
 
     const { userRole } = useCheckUserRole();
+    const [dishDetail, setDishDetail] = useState<Dishes | null>(null);
     const [dishesData, setDishesData] = useState<Dishes[]>([]);
     const { categories } = useCategories();
     const [filteredCategories, setFilteredCategories] = useState<Categories[]>([]);
@@ -26,10 +27,10 @@ export default function Menu() {
     const [deleteDishes, setDeleteDishes] = useState<number[]>([]);
 
     const [showDetail, setShowDetail] = useState(false);
-    const [showDetailIndex, setShowDetailIndex] = useState<number | null>(null);
 
     useEffect(() => {
         const getDishes = async () => {
+            const supabase = createClient()
             try {
                 if (process.env.NEXT_PUBLIC_ENV === 'production') {
                     const { data: menu, error: menuError } = await supabase
@@ -106,7 +107,7 @@ export default function Menu() {
             </div>
             
             <div className={`${isLoading ? "hidden" : ''}`}>
-                {showDetailIndex !== null ? (
+                {dishDetail !== null ? (
                     <div className={`fixed min-h-[calc(100vh-100px)] w-full z-50 ${showDetail ? 'bg-[#6d6c6c67] block' : 'bg-transparent hidden'}`}
                     >
                         <motion.div
@@ -122,15 +123,19 @@ export default function Menu() {
 
                                 <button
                                     className="uppercase cursor-pointer"
-                                    onClick={() => setShowDetail(false)}
+                                    onClick={() => {
+                                        setShowDetail(false);
+                                        setDishDetail(null);
+                                    }}
                                 >
                                     закрыть
                                 </button>
                             </div>
+
                             {!editMode ? (
-                                <DishDetail dishesData={dishesData[showDetailIndex]} />
+                                <DishDetail dishesData={dishDetail}/>
                             ) : (
-                                <EditDish dishesData={dishesData[showDetailIndex]} categories={categories} />
+                                <EditDish dishesData={dishDetail} categories={categories} />
                             )}
                         </motion.div>
                     </div>
@@ -177,7 +182,7 @@ export default function Menu() {
                                     <div className="flex flex-row flex-wrap gap-4 lg:flex-col z-20">
                                         {dishesData
                                             .filter(dish => dish.category_id === category.id)
-                                            .map((dish, dishIndex) => (
+                                            .map((dish) => (
                                                 <div
                                                     key={dish.id}
                                                     className="relative cursor-pointer"
@@ -186,7 +191,7 @@ export default function Menu() {
                                                         className={`w-[300px] lg:w-full h-auto lg:h-[250px] flex lg:flex-row flex-col bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${deleteMode && deleteDishes.includes(dish.id) ? 'scale-95 outline-2 outline-orange-500' : 'scale-100'}`}
                                                         onClick={() => {
                                                             if (!deleteMode) {
-                                                                setShowDetailIndex(dishIndex)
+                                                                setDishDetail(dish);
                                                                 setShowDetail(prev => !prev)
                                                             } else {
                                                                 setDeleteDishes((prev) => {

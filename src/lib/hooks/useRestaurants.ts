@@ -31,7 +31,7 @@ export function useRestaurants() {
                     mockup,
                     mockup_height,
                     mockup_width,
-                    level,
+                    order,
                     restaurant_id,
                     tables (
                         id,
@@ -43,7 +43,7 @@ export function useRestaurants() {
                     )
                 `)
                 .order("order", { ascending: true, referencedTable: "floors.tables" });
-
+                    console.log(restaurantData)
                     if (restaurantError) console.error(restaurantError);
                     else {
                         setRestaurants(restaurantData);

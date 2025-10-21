@@ -1,12 +1,14 @@
 'use client';
 
+import { Dishes } from "@/lib/interfaces/menu";
 import Image from "next/image";
 
 interface Props {
-    dishesData: DishesInterface
+    dishesData: Dishes;
 }
 
 export function DishDetail({ dishesData }: Props) {
+
     return (
         <div className="flex flex-col lg:flex-row bg-white rounded-2xl overflow-hidden z-50">
             <div className="relative w-[350px] h-[350px] lg:w-[450px] lg:h-[450px] bg-white">

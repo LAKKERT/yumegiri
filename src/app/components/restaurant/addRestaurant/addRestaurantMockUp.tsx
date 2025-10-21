@@ -19,13 +19,12 @@ interface AddRestaurantMockUp {
     changeSwithichFloorHandler: (mode: boolean) => void;
     currentFloor: number;
     floors: FieldArrayWithId<Places, "floors", "id">[];
-    ChangeSeatState: (mode: boolean, index: number) => void;
     initTables: (table: Table) => void;
     deletedScene: DeletedScene | null;
     ChangeDeletedScene: () => void;
 }
 
-export function AddRestaurantMockUp({ constraintsRef, update, isSwitchingFloor, changeSwithichFloorHandler, currentFloor, floors, ChangeSeatState, initTables, deletedScene, ChangeDeletedScene }: AddRestaurantMockUp) {
+export function AddRestaurantMockUp({ constraintsRef, update, isSwitchingFloor, changeSwithichFloorHandler, currentFloor, floors, initTables, deletedScene, ChangeDeletedScene }: AddRestaurantMockUp) {
     const aspectRatio = `1110 / ${600}`;
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -195,6 +194,8 @@ export function AddRestaurantMockUp({ constraintsRef, update, isSwitchingFloor, 
     useEffect(() => {
         if (!containerRef.current) return;
 
+        const container = containerRef.current;
+
         const renderer = rendererRef.current;
         const scene = sceneRef.current;
         const camera = cameraRef.current;
@@ -245,7 +246,6 @@ export function AddRestaurantMockUp({ constraintsRef, update, isSwitchingFloor, 
                             if (isClick.current && !isDragging.current) {
                                 // Рейкаст для столов
                                 // сделать debaunce т.к запускается слишком часто
-                                ChangeSeatState(true, obj.parent.userData.tableIndex);
                                 isClick.current = false;
                             }
                             selectedObjects.push(objParent[i]);
@@ -382,8 +382,8 @@ export function AddRestaurantMockUp({ constraintsRef, update, isSwitchingFloor, 
                 document.body.removeChild(stats.dom);
             }
 
-            if (containerRef.current && renderer.domElement.parentNode) {
-                containerRef.current.removeChild(renderer.domElement);
+            if (container && renderer.domElement.parentNode) {
+                container.removeChild(renderer.domElement);
             }
         })
     }, [sceneIsReady]);
@@ -676,7 +676,7 @@ export function AddRestaurantMockUp({ constraintsRef, update, isSwitchingFloor, 
             floorsRef.current[floorIdx].userData.floorIndex = floorIdx;
 
             let GLBModalURL: string | null = null;
-            if (floor.mockup !== null) {
+            if (floor.mockup !== null && typeof floor.mockup !== 'string') {
                 GLBModalURL = URL.createObjectURL(floor.mockup);
             }
 

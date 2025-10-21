@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
-import { Pacifico, Kiwi_Maru, Marck_Script, Klee_One, Arimo, Poiret_One } from "next/font/google";
+import { Pacifico, Kiwi_Maru, Marck_Script, Klee_One, Arimo, Poiret_One, Jura } from "next/font/google";
 import "./globals.css";
+
+const jura = Jura({
+    variable: '--font-jura',
+    subsets: ['latin', 'cyrillic'],
+    weight: ['400', '600', '700'],
+    style: 'normal'
+})
 
 const poiret = Poiret_One({
     variable: '--font-poiret',
@@ -53,7 +60,7 @@ export default function RootLayout({
     return (
         <html lang="en" className="scroll-smooth no-touch">
             <body
-                className={`${pacifico.variable} ${kiwimaru.variable} ${marck.variable} ${klee.variable} ${arimo.variable} ${poiret.variable} antialiased`}
+                className={`${pacifico.variable} ${kiwimaru.variable} ${marck.variable} ${klee.variable} ${arimo.variable} ${poiret.variable} ${jura.variable} antialiased`}
             >
                 {children}
             </body>

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
@@ -17,7 +16,7 @@ const validationSchema = Yup.object().shape({
 
 export default function SingUp() {
 
-    const { register, handleSubmit, formState: { errors } } = useForm<User>({
+    const { register, handleSubmit } = useForm<User>({
         resolver: yupResolver(validationSchema)
     });
 

@@ -32,32 +32,6 @@ export default function AppendDish() {
         resolver: yupResolver(validationForm),
     })
 
-    // useEffect(() => {
-    //     const getCategories = async () => {
-    //         try {
-    //             const response = await fetch(`/api/menu/getCategoriesAPI`, {
-    //                 method: "GET",
-    //                 headers: {
-    //                     'Content-Type': 'application/json'
-    //                 }
-    //             })
-
-    //             const result = await response.json()
-
-    //             if (response.ok) {
-    //                 setCategories(result.result);
-    //             } else {
-    //                 console.log("DataBase error");
-    //             }
-
-    //         } catch (error) {
-    //             console.log(error);
-    //         }
-    //     }
-
-    //     getCategories();
-    // }, [])
-
     console.log(errors)
     const onSubmit = async (data: AddDish) => {
         if (!selectedFile) {

@@ -12,13 +12,11 @@ interface MainInfo {
     carouselRef: RefObject<HTMLDivElement | null>,
     maskImage: MotionValue<string>,
     isLastImage: boolean,
-    selectedImages: File[],
-    isEditMode: boolean,
     currentRestaurant: Places | undefined,
     order: number,
 }
 
-export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, maskImage, isLastImage, selectedImages, isEditMode, currentRestaurant, order }: MainInfo) {
+export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, maskImage, isLastImage, currentRestaurant, order }: MainInfo) {
     return (
         <div className="flex flex-row items-center gap-4">
             <button
@@ -36,11 +34,11 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                 }}
                 className={`snap-x scroll-smooth flex flex-row items-center gap-4 overflow-hidden overflow-x-hidden transform transition-all duration-300`}
             >
-                {isEditMode && selectedImages.length !== 0 ? (
-                    <AnimatePresence mode='wait'>
-                        {selectedImages.map((image, index) => (
+                <AnimatePresence mode='wait'>
+                    {Array.isArray(currentRestaurant?.gallery) ? (
+                        currentRestaurant?.gallery.map((image, index) => (
                             <motion.div
-                                key={index}
+                                key={image.id}
                                 id={`image${index}`}
                                 className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'} ${order === index ? 'w-[275px] h-[335px]' : 'min-w-[250px] w-[250px] h-[310px]'} rounded-md`}
                                 initial={{
@@ -64,7 +62,7 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                                 }}
                             >
                                 <Image
-                                    src={URL.createObjectURL(selectedImages[index])}
+                                    src={image.image}
                                     alt="restaurant gallery"
                                     fill
                                     objectFit="cover"
@@ -73,52 +71,11 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
 
                                 </Image>
                             </motion.div>
-                        ))}
-                    </AnimatePresence>
-                ) : (
-                    <AnimatePresence mode='wait'>
-                        {Array.isArray(currentRestaurant?.gallery) ? (
-                            currentRestaurant?.gallery.map((image, index) => (
-                                <motion.div
-                                    key={image.id}
-                                    id={`image${index}`}
-                                    className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'} ${order === index ? 'w-[275px] h-[335px]' : 'min-w-[250px] w-[250px] h-[310px]'} rounded-md`}
-                                    initial={{
-                                        y: 80,
-                                        opacity: 0
-                                    }}
-                                    exit={{
-                                        y: -80,
-                                        opacity: 0,
-                                        background: '#000'
-                                    }}
-
-                                    animate={{
-                                        y: 0,
-                                        opacity: 100,
-                                        background: '#000'
-                                    }}
-                                    transition={{
-                                        duration: .3,
-                                        ease: "easeInOut"
-                                    }}
-                                >
-                                    <Image
-                                        src={image.image}
-                                        alt="restaurant gallery"
-                                        fill
-                                        objectFit="cover"
-                                        className={`rounded-md origin-center`}
-                                    >
-
-                                    </Image>
-                                </motion.div>
-                            ))
-                        ) : (
-                            null
-                        )}
-                    </AnimatePresence>
-                )}
+                        ))
+                    ) : (
+                        null
+                    )}
+                </AnimatePresence>
             </motion.div>
             <button
                 type="button"

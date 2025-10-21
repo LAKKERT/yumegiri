@@ -63,9 +63,14 @@ export function MenuList({categories, userRole}: ReciveData) {
                 ))}
             </div>
 
-            <form onSubmit={handleSubmit(onsubmit)} className={`flex flex-col ${userRole === 'admin' ? '' : 'hidden'}`}>
+            <form onSubmit={handleSubmit(onsubmit)} className={`flex flex-col gap-2 ${userRole === 'admin' ? '' : 'hidden'}`}>
+                {errors.name ? (
+                    <p className="text-center text-red-400 font-[family-name:var(--font-arimo)]">{errors.name.message}</p>
+                ): (
+                    null
+                )}
                 <input {...register('name')} className="text-center w-full border-b-2 border-black outline-0 caret-black" type="text" placeholder="Название" />
-                <button type="submit">ДОБАВИТЬ</button>
+                <button type="submit" className="cursor-pointer">ДОБАВИТЬ</button>
             </form>
         </div>
     )

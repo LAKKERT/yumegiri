@@ -5,40 +5,39 @@ import { useEffect, useState } from "react";
 import * as Yup from "yup";
 import Image from "next/image";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Categories, Dishes } from "@/lib/interfaces/menu";
+import { Categories, Dishes, EditDishInter } from "@/lib/interfaces/menu";
 import { processData } from "@/helpers/readFiles";
 import { supabase } from "@/db/supabaseConfig";
-import { saveImage, saveRestaurantFiles } from "@/helpers/saveImage";
+import { saveImage } from "@/helpers/saveImage";
 
 interface Props {
-    dishesData: Dishes
-    categories: Categories[]
+    dishesData: Dishes;
+    categories: Categories[];
 }
 
 const validationSchema = Yup.object().shape({
-    name: Yup.string(),
-    description: Yup.string(),
-    weight: Yup.number(),
-    price: Yup.number(),
-    kcal: Yup.number(),
-    proteins: Yup.number(),
-    carbohydrates: Yup.number(),
-    fats: Yup.number(),
-    category_id: Yup.number(),
-    category: Yup.string(),
-    category_name: Yup.string(),
+    name: Yup.string().required(),
+    description: Yup.string().required(),
+    weight: Yup.number().required(),
+    price: Yup.number().required(),
+    kcal: Yup.number().required(),
+    proteins: Yup.number().required(),
+    carbohydrates: Yup.number().required(),
+    fats: Yup.number().required(),
+    category_id: Yup.number().required(),
+    category: Yup.string().required(),
 })
 
 export function EditDish({ dishesData, categories }: Props) {
     const [selectedFile, setSelectedFile] = useState<File>();
 
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<Dishes>({
-        // resolver: yupResolver(validationSchema)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<EditDishInter>({
+        resolver: yupResolver(validationSchema)
     })
 
     useEffect(() => {
         reset({
-            id: dishesData.id,
             name: dishesData.name,
             description: dishesData.description,
             kcal: dishesData.kcal,
@@ -48,9 +47,9 @@ export function EditDish({ dishesData, categories }: Props) {
             weight: dishesData.weight,
             price: dishesData.price,
             category_id: dishesData.category_id,
-            image: dishesData.image
+            category: dishesData.category,
         })
-    }, [dishesData])
+    }, [dishesData, reset])
 
     const getFileName = async (file: File, category: number) => {
 
@@ -63,13 +62,13 @@ export function EditDish({ dishesData, categories }: Props) {
         return { newName, path, fullPath }
     }
 
-    const onsubmit = async (data: Dishes) => {
+    const onsubmit = async (data: EditDishInter) => {
         let coverProperties
 
         if (selectedFile) {
             const coverData = await processData(selectedFile)
             coverProperties = await getFileName(selectedFile, data.category_id);
-    
+
             await saveImage(coverData as string, coverProperties.path, coverProperties.newName);
         }
 

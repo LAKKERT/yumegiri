@@ -46,7 +46,7 @@ export interface Seats {
 export interface Table {
     id: string;
     floor_id?: string;
-    floor_order: number;
+    floor_order?: number;
     order?: number;
     status?: boolean;
     number_of_seats?: number;
@@ -56,7 +56,7 @@ export interface Floors {
     uuid: string;
     mockup: File | string | null;
     order: number;
-    hasMockupUpdate: boolean;
+    hasMockupUpdate?: boolean;
     mockup_height?: number;
     mockup_width?: number;
     // places: Seats[];

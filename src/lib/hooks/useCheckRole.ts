@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@/db/supabaseConfig";
+import { createClient } from "@/app/utils/supabase/client";
 import { useEffect, useState } from "react";
 
 export function useCheckUserRole() {
@@ -9,11 +9,15 @@ export function useCheckUserRole() {
 
     useEffect(() => {
         const getUserRole = async () => {
+            const supabase = createClient()
             const { data: { user } } = await supabase.auth.getUser();
-            const userRole = await user?.user_metadata?.user_role || (await supabase.auth.getClaims()).data?.claims.user_role
-            console.log(await supabase.auth.getClaims())
+
+            if (!user) return;
+            
+            const userRole = await supabase.from('user_roles').select().eq('user_id', user?.id).single();
+
             if (userRole) {
-                setUserRole(userRole);
+                setUserRole(userRole.data.role);
             }
         }
 

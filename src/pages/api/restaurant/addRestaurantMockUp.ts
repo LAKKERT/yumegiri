@@ -1,6 +1,7 @@
 'use server';
 
 import Connect from "@/db/dbConfig";
+import { Seats } from "@/lib/interfaces/mockup";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function addRestaurantMockUp(req: NextApiRequest, res: NextApiResponse) {
@@ -24,11 +25,11 @@ export default async function addRestaurantMockUp(req: NextApiRequest, res: Next
 
                 const restaurantId = createRestaurant.rows[0].id;
 
-                const values = seatsData.map(item => [
+                const values = seatsData.map((item: Seats) => [
                     restaurantId,
                     item.name,
                     item.description,
-                    item.numberOfSeats,
+                    item.number_of_seats,
                     item.image,
                     item.x,
                     item.y

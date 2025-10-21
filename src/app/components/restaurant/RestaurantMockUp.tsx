@@ -237,21 +237,9 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
             pointerRef.current.y = -(y / rect.height) * 2 + 1;
         };
 
-        const ScaleMapHandler = (e: WheelEvent) => {
-            if (e.deltaY > 0) {
-                isZooming.current = true;
-                zoomScale.current -= 1;
-            } else {
-                isZooming.current = true;
-                zoomScale.current += 1;
-            }
-        };
-
-        window.addEventListener("wheel", ScaleMapHandler);
         window.addEventListener("pointermove", onPointerMove);
 
         return () => {
-            window.removeEventListener("wheel", ScaleMapHandler);
             window.removeEventListener("pointermove", onPointerMove);
 
             if (rendererRef.current) {
@@ -281,6 +269,27 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
             }
         };
     }, []);
+
+    useEffect(() => {
+        const ScaleMapHandler = (e: WheelEvent) => {
+            if (!mapFocus) return;
+            e.preventDefault();
+
+            isZooming.current = true;
+
+            if (e.deltaY > 0) {
+                zoomScale.current -= 1;
+            } else {
+                zoomScale.current += 1;
+            }
+        };
+
+        window.addEventListener("wheel", ScaleMapHandler, { passive: false });
+
+        return () => {
+            window.removeEventListener("wheel", ScaleMapHandler);
+        };
+    }, [mapFocus]);
 
     // Инициализирование сцены и посадочных мест
     useEffect(() => {
@@ -514,7 +523,7 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
         startAnimation.current = performance.now();
         opacityStartAnimation.current = performance.now();
 
-        return () => {};
+        return () => { };
     }, [isSwitchingFloor]);
 
     useEffect(() => {
@@ -752,7 +761,7 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
             }
         }
 
-        return () => {};
+        return () => { };
     }, [currentFloor]);
 
     const disposeScene = (object: THREE.Object3D) => {

@@ -14,6 +14,19 @@ export interface Dishes {
     category_name: string;
 }
 
+export interface EditDishInter {
+    name: string;
+    description: string;
+    weight: number;
+    price: number;
+    kcal: number;
+    proteins: number;
+    carbohydrates: number;
+    fats: number;
+    category_id: number;
+    category: string;
+}
+
 export interface Categories {
     id: number;
     name: string;

@@ -19,7 +19,7 @@ export default async function DeleteDishes(req: NextApiRequest, res: NextApiResp
             );
             return res.status(200).json({ message: `Dishes deleted` });
         } catch (error) {
-            return res.status(500).json({ message: `Error deleting dishes: ${error.message}` });
+            return res.status(500).json({ message: `Error deleting dishes: ${error}` });
         }
     } else {
         return res.status(405).json({ message: "Method not allowed" });
