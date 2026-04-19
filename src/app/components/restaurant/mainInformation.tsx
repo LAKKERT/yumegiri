@@ -1,8 +1,7 @@
 "use client";
 
 import { Places } from "@/lib/interfaces/mockup";
-import { MotionValue } from "motion";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type MotionValue } from "framer-motion";
 import Image from "next/image";
 import { RefObject } from "react";
 import { navigateButton } from "@/lib/variants/restaurant";
@@ -28,7 +27,6 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                 variants={navigateButton}
                 initial='init'
                 whileTap='tap'
-                transition='tran'
             >
                 <Image
                     src={'/other/arrow.svg'}
@@ -97,7 +95,6 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                 variants={navigateButton}
                 initial='init'
                 whileTap='tap'
-                transition='tran'
             >
                 <Image
                     className="rotate-180"
