@@ -3,8 +3,7 @@
 import Image from 'next/image';
 import styles from '@/app/styles/reservatoin/variables.module.scss';
 import { RefObject } from 'react';
-import { MotionValue } from "motion";
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, MotionValue } from 'framer-motion';
 import { Places } from '@/lib/interfaces/mockup';
 import { UseFormRegister } from 'react-hook-form';
 
@@ -71,7 +70,7 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                     className={`snap-x scroll-smooth flex flex-row items-center gap-4 overflow-hidden overflow-x-hidden transform transition-all duration-300`}
                 >
                     {gallery && gallery.length > 0 ? (
-                        <AnimatePresence mode='async'>
+                        <AnimatePresence mode='wait'>
                             {gallery.map((image, index) => (
                                 <motion.div
                                     key={index}
