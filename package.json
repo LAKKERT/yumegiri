@@ -21,6 +21,7 @@
     "dotenv": "^16.4.7",
     "fabric": "^6.7.1",
     "formidable": "^3.5.4",
+    "framer-motion": "^12.38.0",
     "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
