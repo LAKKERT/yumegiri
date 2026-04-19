@@ -9,7 +9,7 @@ export function InrtoductionPart() {
         <div className="relative h-screen">
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                 <p className="text-center text-3xl lg:text-6xl font-(family-name:--font-kiwimaru) z-10 [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]">
-                こんにちは
+                    こんにちは
                 </p>
 
                 <p className="uppercase [word-spacing:10px] text-center text-2xl mt-5 [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]">мм… это рамен внизу? 🍜</p>

@@ -6,12 +6,21 @@ import { ReservationPart } from "@/app/components/home/reservationPart";
 import { MenuPart } from "@/app/components/home/menuPart";
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { useEffect } from "react";
 
 export default function Home() {
     const { scrollYProgress } = useScroll();
 
     const scale = useTransform(scrollYProgress, [0, 0.1], [1, 1.5]);
     const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+
+    useEffect(() => {
+        const unsubscribe = scrollYProgress.on("change", (latest) => {
+            console.log(latest);
+        });
+
+        return () => unsubscribe();
+    }, [scrollYProgress]);
 
     return (
         <div className={`h-625 mt-25 font-(family-name:--font-pacifico) caret-transparent`}>
@@ -30,7 +39,7 @@ export default function Home() {
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0}}
+                        initial={{ opacity: 0 }}
                         className="fixed left-50 top-150 origin-right"
                         style={{
                             opacity: useTransform(scrollYProgress, [0.05, 0.1, 0.2], [0, .5, 0]),
@@ -41,7 +50,7 @@ export default function Home() {
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0}}
+                        initial={{ opacity: 0 }}
                         className="fixed right-25 top-70 origin-bottom"
                         style={{
                             opacity: useTransform(scrollYProgress, [0.1, 0.15, 0.21], [0, .5, 0]),
@@ -52,7 +61,7 @@ export default function Home() {
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0}}
+                        initial={{ opacity: 0 }}
                         className="fixed left-150 top-40 origin-bottom"
                         style={{
                             opacity: useTransform(scrollYProgress, [0.1, 0.15, 0.25], [0, .5, 0]),
@@ -63,7 +72,7 @@ export default function Home() {
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0}}
+                        initial={{ opacity: 0 }}
                         className="fixed right-90 top-160 origin-left"
                         style={{
                             opacity: useTransform(scrollYProgress, [0.08, 0.13, 0.24], [0, .5, 0]),
@@ -74,18 +83,18 @@ export default function Home() {
                     </motion.div>
 
                     <motion.div
-                        className="fixed origin-top-left"
+                        className="fixed origin-top-left z-50"
                         style={{
-                            x: useTransform(scrollYProgress, [0.25, .3], [-500, 0] )
+                            x: useTransform(scrollYProgress, [0.25, .3], [-500, 0])
                         }}
                     >
                         <Image src={'/home/corner.png'} alt="cloud" width={600} height={115} />
                     </motion.div>
 
                     <motion.div
-                        className="fixed right-0  -scale-x-100"
+                        className="fixed right-0  -scale-x-100 z-50"
                         style={{
-                            x: useTransform(scrollYProgress, [0.25, .3], [-500, 0] )
+                            x: useTransform(scrollYProgress, [0.25, .3], [-500, 0])
                         }}
                     >
                         <Image src={'/home/corner.png'} alt="cloud" width={600} height={115} />

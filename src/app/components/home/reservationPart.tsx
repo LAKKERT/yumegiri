@@ -2,7 +2,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { button } from "@/lib/variants/home";
 
 export function ReservationPart() {
     const { scrollYProgress } = useScroll();
@@ -72,10 +71,18 @@ export function ReservationPart() {
             >
                 <p className="leading-12 uppercase text-3xl [word-spacing:10px] [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]">Оставь своё имя в книге гостей и мы подготовим столик для тебя</p>
                 <motion.div
-                    className="mt-4"  
-                    variants={button}
-                    initial='init'
-                    whileHover="hover"
+                    className="mt-4"
+                    initial={{ scale: 1 }}
+                    whileHover={{
+                        scale: [1, .95, 1],
+                     }}
+                    transition={{
+                        scale: {
+                            duration: 3,
+                            repeat: Infinity,
+                            ease: 'easeInOut'
+                        }
+                    }}
                 >
 
                     <Link className="uppercase underline underline-offset-8 text-4xl [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]" href="/restaurants"
