@@ -69,7 +69,7 @@ export function RestaurantToolBar({ changeEditMode, restaurantId }: Props) {
                     transition={{
                         duration: .3
                     }}
-                    className='text-lg font-[family-name:var(--font-arimo)] select-none'>Вы уверены, что хотите удалить ресторан
+                    className='text-lg font-(family-name:--font-arimo) select-none'>Вы уверены, что хотите удалить ресторан
                 </motion.p>
                 <div className={`flex flex-row gap-4`}>
                     <button type='button' disabled={confirmDelete ? false : true} className={`${styles.restaurant_button} ${confirmDelete ? 'cursor-pointer' : 'select-none cursor-default'}`} onClick={() => setConfirmDelete(false)}>

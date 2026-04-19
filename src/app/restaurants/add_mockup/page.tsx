@@ -48,7 +48,7 @@ export default function AddMockUP() {
                 mockup: null,
                 mockup_height: 0,
                 mockup_width: 0,
-                tables: []
+                places: []
             }],
         },
     });
@@ -164,7 +164,7 @@ export default function AddMockUP() {
             if (res.ok && tables) {
                 try {
                     const { data: restaurant_id, error: restaurantError } = await supabase
-                        .from('restaurant')
+                        .from('restaurants')
                         .insert({
                             name: data.restaurant_name,
                             description: data.description,
@@ -204,7 +204,7 @@ export default function AddMockUP() {
                                 for (const table of tables) {
                                     if (table.floor_order === i) {
                                         const { error: tablesError } = await supabase
-                                            .from('tables')
+                                            .from('places')
                                             .insert({
                                                 id: table.id,
                                                 status: table.status,
@@ -236,7 +236,7 @@ export default function AddMockUP() {
             hasMockupUpdate: true,
             mockup_height: 0,
             mockup_width: 0,
-            tables: []
+            places: []
         });
 
         setCountOfFloors(prev => prev += 1);

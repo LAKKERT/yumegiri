@@ -4,7 +4,7 @@ import { login } from './actions'
 
 export default function Login() {
     return (
-        <div className="flex justify-center items-center mt-[100px] font-[family-name:var(--font-pacifico)] min-h-[calc(100vh-100px)] bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
+        <div className="flex justify-center items-center mt-25 font-(family-name:--font-pacifico) min-h-[calc(100vh-100px)] bg-linear-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
             <Header />
             <form>
                 <div className="bg-white text-black">

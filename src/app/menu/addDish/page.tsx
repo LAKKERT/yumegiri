@@ -110,12 +110,12 @@ export default function AppendDish() {
     }
 
     return (
-        <div className="h-[calc(100vh-100px)] w-full flex justify-center items-center bg-[#e4c3a2] px-2 mt-[100px] font-[family-name:var(--font-pacifico)]  caret-transparent">
+        <div className="h-[calc(100vh-100px)] w-full flex justify-center items-center bg-[#e4c3a2] px-2 mt-25 font-(family-name:--font-pacifico)et-transparent">
             <Header />
 
-            <div className={`w-full max-w-[920px] h-[450px] bg-white rounded-2xl overflow-hidden`}>
+            <div className={`w-full max-w-230 h-112.5 bg-white rounded-2xl overflow-hidden`}>
                 <form onSubmit={handleSubmit(onSubmit)} className="flex flex-row">
-                    <div className={`relative w-[450px] h-[450px] flex justify-center items-end pb-3`}>
+                    <div className={`relative w-112.5 h-112.5 flex justify-center items-end pb-3`}>
                         <input id='imageInput' onChange={(e) => {
                             const files = e.target.files;
                             if (files && files.length > 0) {
@@ -148,23 +148,23 @@ export default function AppendDish() {
                         </select>
 
                         <div className="caret-transparent flex flex-row gap-4">
-                            <div className="relative w-[90px] h-[65px] flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
-                                <input {...register('kcal')} className="text-center w-[80px] border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
+                            <div className="relative w-22.5 h-16.25 flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
+                                <input {...register('kcal')} className="text-center w-20 border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
                                 <span className="select-none">ККал</span>
                             </div>
 
-                            <div className="relative w-[90px] h-[65px] flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
-                                <input {...register('proteins')} className="text-center w-[80px] border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
+                            <div className="relative w-22.5 h-16.25 flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
+                                <input {...register('proteins')} className="text-center w-20 border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
                                 <span className="select-none">Белки</span>
                             </div>
 
-                            <div className="relative w-[90px] h-[65px] flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
-                                <input {...register('carbohydrates')} className="text-center w-[80px] border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
+                            <div className="relative w-22.5 h-16.25 flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
+                                <input {...register('carbohydrates')} className="text-center w-20 border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
                                 <span className="select-none">Углеводы</span>
                             </div>
 
-                            <div className="relative w-[90px] h-[65px] flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
-                                <input {...register('fats')} className="text-center w-[80px] border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
+                            <div className="relative w-22.5 h-16.25 flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
+                                <input {...register('fats')} className="text-center w-20 border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
                                 <span className="select-none">Жиры</span>
                             </div>
                         </div>
@@ -173,7 +173,7 @@ export default function AppendDish() {
                             <div className="relative caret-transparent">
                                 <input
                                     {...register('weight')}
-                                    className="caret-black text-center w-[80px] border-b-2 border-black outline-none focus:outline-none"
+                                    className="caret-black text-center w-20 border-b-2 border-black outline-none focus:outline-none"
                                     type="text"
                                     placeholder="Грамм"
                                 />
@@ -183,7 +183,7 @@ export default function AppendDish() {
 
                             <div className="relative caret-transparent">
                                 <input {...register('price')}
-                                    className="caret-black text-center w-[80px] border-b-2 border-black outline-none focus:outline-none"
+                                    className="caret-black text-center w-20 border-b-2 border-black outline-none focus:outline-none"
                                     type="text"
                                 />
 

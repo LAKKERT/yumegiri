@@ -5,6 +5,7 @@ import { MotionValue } from "motion";
 import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
 import { RefObject } from "react";
+import { navigateButton } from "@/lib/variants/restaurant";
 
 interface MainInfo {
     prevImageHandler: () => void,
@@ -19,13 +20,24 @@ interface MainInfo {
 export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, maskImage, isLastImage, currentRestaurant, order }: MainInfo) {
     return (
         <div className="flex flex-row items-center gap-4">
-            <button
+            <motion.button
                 type="button"
-                className="w-[25px] h-[25px] bg-white rounded-full text-black cursor-pointer"
+                className="w-6.25 h-6.25 bg-white rounded-full text-black cursor-pointer"
                 onClick={prevImageHandler}
+
+                variants={navigateButton}
+                initial='init'
+                whileTap='tap'
+                transition='tran'
             >
-                &lt;
-            </button>
+                <Image
+                    src={'/other/arrow.svg'}
+                    alt="previous"
+                    quality={100}
+                    width={25}
+                    height={25}
+                />
+            </motion.button>
             <motion.div ref={carouselRef}
                 style={{
                     maskImage,
@@ -40,7 +52,7 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                             <motion.div
                                 key={image.id}
                                 id={`image${index}`}
-                                className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'} ${order === index ? 'w-[275px] h-[335px]' : 'min-w-[250px] w-[250px] h-[310px]'} rounded-md`}
+                                className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'} ${order === index ? 'w-68.75 h-83.75' : 'min-w-62.5 w-62.5 h-77.5'} rounded-md`}
                                 initial={{
                                     y: 80,
                                     opacity: 0
@@ -77,13 +89,25 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                     )}
                 </AnimatePresence>
             </motion.div>
-            <button
+            <motion.button
                 type="button"
-                className="w-[25px] h-[25px] bg-white rounded-full text-black cursor-pointer"
+                className="w-6.25 h-6.25 bg-white rounded-full text-black cursor-pointer"
                 onClick={nextImageHandler}
+
+                variants={navigateButton}
+                initial='init'
+                whileTap='tap'
+                transition='tran'
             >
-                &gt;
-            </button>
+                <Image
+                    className="rotate-180"
+                    src={'/other/arrow.svg'}
+                    alt="previous"
+                    quality={100}
+                    width={25}
+                    height={25}
+                />
+            </motion.button>
         </div>
     )
 }

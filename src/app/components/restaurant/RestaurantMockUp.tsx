@@ -15,12 +15,13 @@ interface RestaurantMockUp {
     isSwitchingFloor: boolean;
     changeSwithichFloorHandler: (mode: boolean) => void;
     currentFloor: number;
+    seatIsSelected: boolean;
     ChangeSeatState: (mode: boolean) => void;
     changeSelectedSeat: (seatID: string) => void;
     changeIsLoading: () => void;
 }
 
-export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, changeSwithichFloorHandler, currentRestaurant, currentFloor, ChangeSeatState, changeSelectedSeat, changeIsLoading }: RestaurantMockUp) {
+export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, changeSwithichFloorHandler, currentRestaurant, currentFloor, seatIsSelected, ChangeSeatState, changeSelectedSeat, changeIsLoading }: RestaurantMockUp) {
     const aspectRatio = `1110 / ${600}`;
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -174,6 +175,7 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
 
             lastMousePosition.current = { x: e.clientX, y: e.clientY };
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cameraRef]);
 
     function clamp(value: number, min: number, max: number) {
@@ -393,7 +395,7 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
             const currentZ = -10 - floorIdx * FLOOR_SPACING;
             floorZsRef.current[floorIdx] = currentZ;
 
-            const floorTables = currentRestaurant.floors[floorIdx].tables;
+            const floorTables = currentRestaurant.floors[floorIdx].places;
 
             if (typeof floor.mockup === 'string') {
                 const floorPromise = new Promise<void>((resolve, reject) => {
@@ -516,6 +518,7 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
                 });
             });
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mainSceneIsLoaded, currentRestaurant]);
 
     useEffect(() => {
@@ -537,7 +540,7 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
         const composer = composerRef.current;
         const outlinePass = outlinePassRef.current;
 
-        if (!renderer || !scene || !camera || !raycaster || !pointer || !cameraPositionZ.current || !outlinePass) return;
+        if (seatIsSelected || !renderer || !scene || !camera || !raycaster || !pointer || !cameraPositionZ.current || !outlinePass  ) return;
 
         zoomScale.current = DEFAULT_ZOOM;
         camera.zoom = zoomScale.current;
@@ -710,7 +713,8 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
                 animationFrameId.current = null;
             }
         };
-    }, [sceneIsReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sceneIsReady, seatIsSelected]);
 
     useEffect(() => {
         if (mapFocus) document.body.style.overflow = "hidden";
@@ -765,7 +769,6 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
     }, [currentFloor]);
 
     const disposeScene = (object: THREE.Object3D) => {
-        console.log('object', object);
         if (!sceneRef.current) return;
         object.traverse((child) => {
             if (child instanceof THREE.Mesh) {
@@ -793,7 +796,7 @@ export function RestaurantMockUp({ constraintsRef, update, isSwitchingFloor, cha
         >
             {loadingProgress < 100 && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="text-white text-lg font-[family-name:var(--font-arimo)]">
+                    <div className="text-white text-lg font-(family-name:--font-arimo)">
                         Загрузка: {Math.round(loadingProgress)}%
                     </div>
                 </div>

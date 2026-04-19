@@ -36,6 +36,7 @@ export default function Loader({ isLoading }: Loader) {
         }
 
         turnOffLoading();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoading])
 
 
@@ -54,7 +55,7 @@ export default function Loader({ isLoading }: Loader) {
                     transition={{
                         duration: .5
                     }}
-                    className="text-4xl [text-shadow:0_4px_4px_rgb(0_0_0_/_0.5)]"
+                    className="text-4xl [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]"
                 >
                     ЗАГРУЗКА...
                 </motion.span>
@@ -156,7 +157,7 @@ export default function Loader({ isLoading }: Loader) {
                     transition={{
                         duration: 1.5,
                     }}
-                    className={`absolute bottom-[-60px] left-2 origin-right`}
+                    className={`absolute -bottom-15 left-2 origin-right`}
                 >
                     <Image src={'/home/cloud_7.png'} alt="cloud" width={270} height={115} />
                 </motion.div>

@@ -2,17 +2,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { button } from "@/lib/variants/home";
 
 export function ReservationPart() {
     const { scrollYProgress } = useScroll();
 
-    const pointerEvents = useTransform(scrollYProgress, (progress) => 
+    const pointerEvents = useTransform(scrollYProgress, (progress) =>
         progress >= .25 ? "auto" : "none"
     );
 
     return (
         <div className="h-screen flex flex-row justify-center items-center">
-            <div className="relative min-h-[800px] flex-shrink-0 w-[700px] z-0">
+            <div className="relative min-h-200 shrink-0 w-175 z-0">
                 <motion.div
                     className={`z-20 relative`}
                     animate={{
@@ -29,7 +30,7 @@ export function ReservationPart() {
                     }}
                 >
                     <Image
-                        className="absolute top-45 left-[-45px]"
+                        className="absolute top-45 -left-11.25"
                         src={"/home/pen.png"}
                         alt="pen"
                         width={350}
@@ -39,9 +40,9 @@ export function ReservationPart() {
 
                 <motion.div
                     className={`z-0`}
-                    animate={{ 
+                    animate={{
                         y: [0, -30, 30, 0]
-                        
+
                     }}
 
                     transition={{
@@ -63,21 +64,30 @@ export function ReservationPart() {
                 </motion.div>
             </div>
 
-            <motion.div 
-                className={`z-10 [text-shadow:0_4px_4px_rgb(0_0_0_/_0.5)]`}
+            <motion.div
+                className={`text-center w-200 z-10 [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]`}
                 style={{
                     pointerEvents: pointerEvents
                 }}
             >
-                <Link className="text-4xl" href="/restaurants"
-                    onClick={(e) => {
-                        if (scrollYProgress.get() < .25) {
-                            e.preventDefault();
-                        }
-                    }}
+                <p className="leading-12 uppercase text-3xl [word-spacing:10px] [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]">Оставь своё имя в книге гостей и мы подготовим столик для тебя</p>
+                <motion.div
+                    className="mt-4"  
+                    variants={button}
+                    initial='init'
+                    whileHover="hover"
                 >
-                    Зарезирвировать столик
-                </Link>
+
+                    <Link className="uppercase underline underline-offset-8 text-4xl [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]" href="/restaurants"
+                        onClick={(e) => {
+                            if (scrollYProgress.get() < .25) {
+                                e.preventDefault();
+                            }
+                        }}
+                    >
+                        Зарезирвировать столик
+                    </Link>
+                </motion.div>
             </motion.div>
         </div>
     );

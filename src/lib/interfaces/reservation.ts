@@ -1,9 +1,9 @@
 export interface Reservation {
     name: string;
-    booked_date: Date;
+    booked_date?: Date;
     phone_number: string;
-    restaurant_id: number;
-    place_id: string;
+    restaurant_id?: number;
+    place_id?: string;
 }
 
 export interface Mockup {

@@ -114,7 +114,7 @@ export function EditDish({ dishesData, categories }: Props) {
     return (
         <form onSubmit={handleSubmit(onsubmit)}>
             <div className="flex flex-row bg-white rounded-2xl overflow-hidden z-50">
-                <div className="relative w-[450px] h-[450px] bg-white">
+                <div className="relative w-112.5 h-112.5 bg-white">
                     <Image
                         src={`http://localhost:3000/${dishesData.image}`}
                         alt='Dish'
@@ -145,23 +145,23 @@ export function EditDish({ dishesData, categories }: Props) {
                     </select>
 
                     <div className="flex flex-row gap-4">
-                        <div className="relative w-[90px] h-[65px] flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
-                            <input {...register('kcal')} className="text-center w-[80px] border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
+                        <div className="relative w-22.5 h-16.25 flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
+                            <input {...register('kcal')} className="text-center w-20 border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
                             <span className="select-none">ККал</span>
                         </div>
 
-                        <div className="relative w-[90px] h-[65px] flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
-                            <input {...register('proteins')} className="text-center w-[80px] border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
+                        <div className="relative w-22.5 h-16.25 flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
+                            <input {...register('proteins')} className="text-center w-20 border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
                             <span className="select-none">Белки</span>
                         </div>
 
-                        <div className="relative w-[90px] h-[65px] flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
-                            <input {...register('carbohydrates')} className="text-center w-[80px] border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
+                        <div className="relative w-22.5 h-16.25 flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
+                            <input {...register('carbohydrates')} className="text-center w-20 border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
                             <span className="select-none">Углеводы</span>
                         </div>
 
-                        <div className="relative w-[90px] h-[65px] flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
-                            <input {...register('fats')} className="text-center w-[80px] border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
+                        <div className="relative w-22.5 h-16.25 flex flex-col items-center justify-between p-1 bg-[#ffa685] rounded-xl">
+                            <input {...register('fats')} className="text-center w-20 border-b-2 border-black outline-0 caret-black outline-none focus:outline-none" type="text" />
                             <span className="select-none">Жиры</span>
                         </div>
 
@@ -170,12 +170,12 @@ export function EditDish({ dishesData, categories }: Props) {
                     <div className="w-full flex justify-between text-xl">
                         <input
                             {...register('weight')}
-                            className="caret-black text-center w-[80px] border-b-2 border-black outline-none focus:outline-none"
+                            className="caret-black text-center w-20 border-b-2 border-black outline-none focus:outline-none"
                             type="text"
                             placeholder="Грамм"
                         />
                         <input {...register('price')}
-                            className="caret-black text-center w-[80px] border-b-2 border-black outline-none focus:outline-none"
+                            className="caret-black text-center w-20 border-b-2 border-black outline-none focus:outline-none"
                             type="text"
                         />
                     </div>

@@ -77,6 +77,7 @@ export default function Menu() {
             );
             setFilteredCategories(cats);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [categories, dishesData]);
 
     const handleDeleteDishes = async (dishIds: (number[])) => {
@@ -99,19 +100,19 @@ export default function Menu() {
     }
 
     return (
-        <div className=" mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent">
+        <div className=" mt-25 font-(family-name:--font-pacifico) caret-transparent">
             <Header />
 
             <div className={`fixed w-full z-30 pointer-events-none`} >
                 <Loader isLoading={isLoading} />
             </div>
-            
+
             <div className={`${isLoading ? "hidden" : ''}`}>
                 {dishDetail !== null ? (
                     <div className={`fixed min-h-[calc(100vh-100px)] w-full z-50 ${showDetail ? 'bg-[#6d6c6c67] block' : 'bg-transparent hidden'}`}
                     >
                         <motion.div
-                            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] lg:max-w-[920px] lg:w-full max-h-[450px] h-full z-40 ${showDetail ? 'block' : 'hidden'}`}
+                            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-87.5 lg:max-w-230 lg:w-full max-h-112.5 h-full z-40 ${showDetail ? 'block' : 'hidden'}`}
                         >
                             <div className={`w-full flex flex-row justify-end gap-4 z-50`}>
                                 <button
@@ -122,18 +123,25 @@ export default function Menu() {
                                 </button>
 
                                 <button
-                                    className="uppercase cursor-pointer"
+                                    className="uppercase cursor-pointer w-7 h-7 bg-white rounded-full"
                                     onClick={() => {
                                         setShowDetail(false);
                                         setDishDetail(null);
                                     }}
                                 >
-                                    закрыть
+                                    <Image
+                                        className="m-auto"
+                                        src={'/other/close.svg'}
+                                        alt="close"
+                                        width={20}
+                                        height={20}
+                                    
+                                    />
                                 </button>
                             </div>
 
                             {!editMode ? (
-                                <DishDetail dishesData={dishDetail}/>
+                                <DishDetail dishesData={dishDetail} />
                             ) : (
                                 <EditDish dishesData={dishDetail} categories={categories} />
                             )}
@@ -174,7 +182,7 @@ export default function Menu() {
                             </div>
 
                             {filteredCategories?.map((category) => (
-                                <div id={`${category.id}`} key={category.id} className="mb-8 scroll-m-[120px]">
+                                <div id={`${category.id}`} key={category.id} className="mb-8 scroll-m-30">
                                     <h3 className="text-2xl font-bold text-black mb-4">
                                         {category.name.toUpperCase()}
                                     </h3>
@@ -188,7 +196,7 @@ export default function Menu() {
                                                     className="relative cursor-pointer"
                                                 >
                                                     <div
-                                                        className={`w-[300px] lg:w-full h-auto lg:h-[250px] flex lg:flex-row flex-col bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${deleteMode && deleteDishes.includes(dish.id) ? 'scale-95 outline-2 outline-orange-500' : 'scale-100'}`}
+                                                        className={`w-75 lg:w-full h-auto lg:h-62.5 flex lg:flex-row flex-col bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${deleteMode && deleteDishes.includes(dish.id) ? 'scale-95 outline-2 outline-orange-500' : 'scale-100'}`}
                                                         onClick={() => {
                                                             if (!deleteMode) {
                                                                 setDishDetail(dish);
@@ -204,7 +212,7 @@ export default function Menu() {
                                                             }
                                                         }}
                                                     >
-                                                        <div className="flex relative w-[300px] h-[300px] lg:h-full flex-shrink-0">
+                                                        <div className="flex relative w-75 h-75 lg:h-full shrink-0">
                                                             <Image
                                                                 src={`http://localhost:3000/${dish.image}`}
                                                                 alt="Dish"

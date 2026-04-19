@@ -13,7 +13,7 @@ export function useRestaurants() {
             try {
                 if (process.env.NEXT_PUBLIC_ENV === 'production') {
                 const { data: restaurantData, error: restaurantError } = await supabase
-                .from("restaurant")
+                .from("restaurants")
                 .select(`
                     id,
                     restaurant_name: name,
@@ -33,7 +33,7 @@ export function useRestaurants() {
                     mockup_width,
                     order,
                     restaurant_id,
-                    tables (
+                    places (
                         id,
                         order,
                         status,
@@ -42,8 +42,7 @@ export function useRestaurants() {
                     )
                     )
                 `)
-                .order("order", { ascending: true, referencedTable: "floors.tables" });
-                    console.log(restaurantData)
+                .order("order", { ascending: true, referencedTable: "floors.places" });
                     if (restaurantError) console.error(restaurantError);
                     else {
                         setRestaurants(restaurantData);

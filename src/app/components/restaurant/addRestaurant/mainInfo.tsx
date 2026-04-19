@@ -24,12 +24,12 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
     return (
         <div className="flex flex-col items-center gap-2">
             <div className="flex flex-col">
-                <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>название</span>
+                <span className={`${styles.advice} font-(family-name:--font-kiwimaru)`}>название</span>
                 <input {...register('restaurant_name')} className={`${styles.reservation_inputs}`} type="text" placeholder="НАЗВАНИЕ" />
             </div>
 
             <div className="flex flex-col">
-                <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>описание</span>
+                <span className={`${styles.advice} font-(family-name:--font-kiwimaru)`}>описание</span>
                 <textarea
                     onInput={(e) => {
                         const target = e.target as HTMLTextAreaElement;
@@ -39,25 +39,25 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                         target.style.height = `${target.scrollHeight}px`;
                     }}
                     {...register('description')}
-                    className={`${styles.reservation_inputs} overflow-y-hidden font-[family-name:var(--font-marck)]`}
+                    className={`${styles.reservation_inputs} overflow-y-hidden font-(family-name:--font-marck)`}
                     placeholder="ОПИСАНИЕ"
                 />
             </div>
 
             <div className="flex flex-col">
-                <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>адрес</span>
-                <input {...register('address')} className={`${styles.reservation_inputs} font-[family-name:var(--font-marck)]`} type="text" placeholder="АДРЕСС" />
+                <span className={`${styles.advice} font-(family-name:--font-kiwimaru)`}>адрес</span>
+                <input {...register('address')} className={`${styles.reservation_inputs} font-(family-name:--font-marck)`} type="text" placeholder="АДРЕСС" />
             </div>
 
             <div className="flex flex-col">
-                <span className={`${styles.advice} font-[family-name:var(--font-kiwimaru)]`}>контакты</span>
-                <input {...register('phone_number')} className={`${styles.reservation_inputs} font-[family-name:var(--font-marck)]`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
+                <span className={`${styles.advice} font-(family-name:--font-kiwimaru)`}>контакты</span>
+                <input {...register('phone_number')} className={`${styles.reservation_inputs} font-(family-name:--font-marck)`} type="text" placeholder="НОМЕР ТЕЛЕФОНА" />
             </div>
 
             <div className="flex flex-row items-center gap-4">
                 <button
                     type="button"
-                    className="w-[25px] h-[25px] bg-white rounded-full text-black cursor-pointer"
+                    className="w-6.25 h-6.25 bg-white rounded-full text-black cursor-pointer"
                     onClick={prevImageHandler}
                 >
                     &lt;
@@ -76,7 +76,7 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                                 <motion.div
                                     key={index}
                                     id={`image${index}`}
-                                    className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'} ${order === index ? 'w-[275px] h-[335px]' : 'min-w-[250px] w-[250px] h-[310px]'} rounded-md`}
+                                    className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'} ${order === index ? 'w-68.75 h-83.75' : 'min-w-62.5 w-62.5 h-77.5'} rounded-md`}
                                     initial={{
                                         y: 80,
                                         opacity: 0
@@ -114,7 +114,7 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                                 gallery.map((image, imageInd) => (
                                     <motion.div
                                         key={imageInd}
-                                        className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'}  ${order === imageInd ? 'w-[275px] h-[335px]' : 'min-w-[250px] w-[250px] h-[310px]'} rounded-md`}
+                                        className={`relative snap-start bg-white shrink-0 transform-3d  ${isLastImage ? 'scroll-ml-0' : 'scroll-ml-4'}  ${order === imageInd ? 'w-68.75 h-83.75' : 'mimin-w-62.5-62.5 h-77.5'} rounded-md`}
                                         initial={{ y: 80, opacity: 0 }}
                                         exit={{ y: -80, opacity: 0, background: '#000' }}
                                         animate={{ y: 0, opacity: 100, background: '#000' }}
@@ -135,7 +135,7 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                 </motion.div>
                 <button
                     type="button"
-                    className="w-[25px] h-[25px] bg-white rounded-full text-black cursor-pointer"
+                    className="w-6.25 h-6.25 bg-white rounded-full text-black cursor-pointer"
                     onClick={nextImageHandler}
                 >
                     &gt;

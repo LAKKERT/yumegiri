@@ -14,9 +14,9 @@ export default function Home() {
     const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
 
     return (
-        <div className={`h-[2500px] mt-[100px] font-[family-name:var(--font-pacifico)] caret-transparent`}>
+        <div className={`h-625 mt-25 font-(family-name:--font-pacifico) caret-transparent`}>
             <Header />
-            <div className={`w-full h-full flex flex-col items-center bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] `}>
+            <div className={`w-full h-full flex flex-col items-center bg-linear-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] `}>
                 <div className="w-full">
                     <motion.div
                         initial={{ opacity: 1 }}

@@ -12,6 +12,7 @@
     "@hookform/resolvers": "^5.2.1",
     "@next/font": "^14.2.15",
     "@studiometa/js-toolkit": "^3.1.1",
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.49.8",
     "@tailwindcss/vite": "^4.1.8",
     "bcrypt": "^5.1.1",
@@ -32,7 +33,7 @@
     "supabase": "^2.23.4",
     "three": "^0.180.0",
     "uuid": "^11.1.0",
-    "yup": "^1.6.1"
+    "yup": "^1.7.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

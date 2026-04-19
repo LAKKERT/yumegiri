@@ -52,20 +52,20 @@ export function MenuList({categories, userRole}: ReciveData) {
     }
 
     return (
-        <div className="h-[500px] min-w-[300px] hidden md:flex flex-col items-center gap-2 p-3 text-black bg-white rounded-2xl shadow-xl">
+        <div className="h-125 min-w-75 hidden md:flex flex-col items-center gap-2 p-3 text-black bg-white rounded-2xl shadow-xl">
             <h2>КАТЕГОРИИ</h2>
 
             <div className={`w-full flex flex-col gap-2 font-light text-xl`}>
                 {categories.length > 0 && categories.map((category) => (
                     <div key={category.id}>
-                        <a className={`font-[family-name:var(--font-pacifico)] underline hover:text-[#bb4d00] transition-colors duration-300 ${currentCat === category.name ? 'text-[#bb4d00]' : ''}`} href={`#${category.id}`} onClick={() => setCurrentCat(category.name)}>{category.name}</a>
+                        <a className={`font-(family-name:--font-pacifico) underline hover:text-[#bb4d00] transition-colors duration-300 ${currentCat === category.name ? 'text-[#bb4d00]' : ''}`} href={`#${category.id}`} onClick={() => setCurrentCat(category.name)}>{category.name}</a>
                     </div>
                 ))}
             </div>
 
             <form onSubmit={handleSubmit(onsubmit)} className={`flex flex-col gap-2 ${userRole === 'admin' ? '' : 'hidden'}`}>
                 {errors.name ? (
-                    <p className="text-center text-red-400 font-[family-name:var(--font-arimo)]">{errors.name.message}</p>
+                    <p className="text-center text-red-400 font-(family-name:--font-arimo)">{errors.name.message}</p>
                 ): (
                     null
                 )}

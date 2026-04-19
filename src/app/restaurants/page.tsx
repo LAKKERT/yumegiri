@@ -15,6 +15,15 @@ import styles from '@/app/styles/reservatoin/variables.module.scss';
 import moment from "moment";
 import Loader from "../components/loader";
 import Image from "next/image";
+import * as Yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+
+const userInfo = Yup.object().shape({
+    name: Yup.string().required('Заполните все поля').matches(/^[а-яА-ЯёЁ\s'-]+$/, 'Введите корректное имя').min(2, 'Слишком короткое имя').max(20, 'Слишком длинное имя'),
+    phone_number: Yup.string()
+        .required('Заполните все поля')
+        .matches(/^(\+7|8)\d{10}$/, 'Введите корректный номер РФ'),
+})
 
 export default function Restaurants() {
 
@@ -24,7 +33,9 @@ export default function Restaurants() {
     const [dataIsFetched, setDataIsFetched] = useState(false);
     const [canvasIsReady, setCanvasIsReady] = useState(false);
 
-    const { register, handleSubmit } = useForm<Reservation>();
+    const { register, handleSubmit, formState: { errors } } = useForm<Reservation>({
+        resolver: yupResolver(userInfo)
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { control: editFormControl, handleSubmit: editFormSubmit, reset: resetEditForm, setValue: setEditFormValue } = useForm<Places>({
@@ -198,7 +209,7 @@ export default function Restaurants() {
             if (bookedErrors) console.error(bookedErrors);
             else {
                 const { error: tableErrors } = await supabase
-                    .from('tables')
+                    .from('places')
                     .update({
                         status: true
                     })
@@ -235,13 +246,12 @@ export default function Restaurants() {
 
     useEffect(() => {
         if (canvasIsReady && dataIsFetched) {
-            console.log(canvasIsReady, dataIsFetched)
             setIsLoading(false);
         }
     }, [canvasIsReady, dataIsFetched])
 
     return (
-        <div className="relative flex justify-center mt-[100px] font-[family-name:var(--font-pacifico)] min-h-[calc(100vh-100px)] bg-gradient-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
+        <div className="relative flex justify-center mt-25 font-(family-name:--font-pacifico) min-h-[calc(100vh-100px)] bg-linear-to-b from-[#D47C7C] via-[#e4c3a2] to-[#E4C3A2] caret-transparent">
             <Header />
 
             <div className={`fixed w-full z-30 pointer-events-none`} >
@@ -269,28 +279,44 @@ export default function Restaurants() {
                     }}
                     className={`fixed w-full min-h-[calc(100vh-100px)] duration-300 ${seatIsSelected ? ' z-50' : ''}`}
                 >
-                    <form onSubmit={handleSubmit(onSubmit)} className={`flex flex-col items-center py-4 px-10 text-black rounded text-lg w-full max-w-[450px] bg-[#ffa685] ${seatIsSelected ? 'z-50' : 'hidden z-0 select-none'} fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 `}>
+                    <form onSubmit={handleSubmit(onSubmit)} className={`flex flex-col items-center py-4 px-10 text-black rounded text-lg w-full max-w-112.5 bg-[#ffa685] ${seatIsSelected ? 'z-50' : 'hidden z-0 select-none'} fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 `}>
                         <div className={`w-full text-center flex flex-col gap-4 ${isBooked ? 'hidden' : ''}`}>
                             <button type="button" className={`self-start ${styles.reservation_form_button}`} onClick={() => setSeatIsSelected(false)}>вернуться</button>
                             <div className="w-full p-2 bg-white rounded">
-                                <p className={`text-[#D57F7E] font-[family-name:var(--font-arimo)]`}>Обратите внимание: ваш столик будет ожидать вас в течение 30 минут после подтверждения.
-                                    Если вы не успеете прийти, бронь автоматически освободится для других гостей.
+                                <p className={`text-[#D57F7E] font-(family-name:--font-arimo)`}>Пожалуйста, укажите ваш номер телефона и имя для бронирования столика. После отправки формы мы свяжемся с вами для подтверждения.
                                 </p>
                             </div>
-                            <div className="relative">
-                                <input id="name" {...register('name')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} placeholder=" " type="text" />
-                                <label htmlFor="name" className={`absolute left-1 top-0 ${styles.user_data_label} font-[family-name:var(--font-arimo)]`}>Имя</label>
+
+                            <div>
+                                <div className={`text-red-500 ${errors.name ? 'block' : 'hidden'} font-(family-name:--font-arimo)`}>
+                                    <span>
+                                        {errors.name?.message}
+                                    </span>
+                                </div>
+                                <div className="relative">
+                                    <input id="name" {...register('name')} className={`${styles.user_data_fields} font-(family-name:--font-arimo)`} placeholder=" " type="text" />
+                                    <label htmlFor="name" className={`absolute left-1 top-0 ${styles.user_data_label} font-(family-name:--font-arimo)`}>Имя</label>
+                                </div>
                             </div>
 
-                            <div className="relative">
-                                <input id="phone_number" {...register('phone_number')} className={`${styles.user_data_fields} font-[family-name:var(--font-arimo)]`} placeholder=" " type="text" />
-                                <label htmlFor="phone_number" className={`absolute left-1 top-0 ${styles.user_data_label} font-[family-name:var(--font-arimo)]`}>Номер телефона</label>
+
+                            <div>
+                                <div className={`text-red-500 ${errors.phone_number ? 'block' : 'hidden'} font-(family-name:--font-arimo)`}>
+                                    <span>
+                                        {errors.phone_number?.message}
+                                    </span>
+                                </div>
+                                <div className="relative">
+                                    <input id="phone_number" {...register('phone_number')} className={`${styles.user_data_fields} font-(family-name:--font-arimo)`} placeholder=" " type="text" />
+                                    <label htmlFor="phone_number" className={`absolute left-1 top-0 ${styles.user_data_label} font-(family-name:--font-arimo)`}>Номер телефона</label>
+                                </div>
+
                             </div>
                             <button type="submit" className={`mx-auto ${styles.reservation_form_button}`}>ЗАБРОНИРОВАТЬ</button>
                         </div>
 
                         <div className={`flex flex-col items-center gap-2 ${isBooked ? '' : 'hidden'}`}>
-                            <p className="text-white font-[family-name:var(--font-arimo)]">Столик успешно зарезервирован. На ваш телефон в ближайшее время свяжется наш сотрудник для подтверждения бронирования.</p>
+                            <p className="text-white font-(family-name:--font-arimo)">Столик успешно зарезервирован</p>
                             <button type="button" onClick={() => {
                                 setIsBooked(false);
                                 setSeatIsSelected(false);
@@ -303,12 +329,12 @@ export default function Restaurants() {
                     </form>
                 </motion.div>
 
-                <div className={`relative max-w-[1110px] h-full w-full flex flex-col gap-4 items-center`}>
-                    <div className="max-w-[760px] w-full flex flex-col items-center gap-2 py-2 rounded-2xl text-black px-6">
-                        <p className="text-lg text-center text-balance text-white uppercase font-[family-name:var(--font-jura)] [text-shadow:0_4px_4px_rgb(0_0_0_/_0.5)]">Выберите кафе и место на схеме кафе, которое хотите зарезервировать. <br />И заполните форму.</p>
+                <div className={`relative max-w-277.5 h-full w-full flex flex-col gap-4 items-center`}>
+                    <div className="max-w-190 w-full flex flex-col items-center gap-2 py-2 rounded-2xl text-black px-6">
+                        <p className="text-lg text-center text-balance text-white uppercase font-(family-name:--font-jura) [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]">Выберите кафе и место на схеме кафе, которое хотите зарезервировать. <br />И заполните форму.</p>
                         <div className="flex flex-wrap gap-4">
                             {restaurants.map((restaurant, restaurantIndex) => (
-                                <button type="button" key={restaurant.id} disabled={seatIsSelected ? true : false} onClick={() => changeRestaurantHandler(restaurantIndex)} className={`w-[160px] h-[50px] flex items-center justify-center border-2 border-[#ff8f66] bg-[#ff8f66] rounded-lg transform transition-colors duration-300 ease-in-out ${currentRestaurant?.id === restaurant.id ? 'bg-black text-[#ff8f66]' : ''} cursor-pointer`}>
+                                <button type="button" key={restaurant.id} disabled={seatIsSelected ? true : false} onClick={() => changeRestaurantHandler(restaurantIndex)} className={`w-40 h-12.5 flex items-center justify-center border-2 border-[#ff8f66] bg-[#ff8f66] rounded-lg transform transition-colors duration-300 ease-in-out ${currentRestaurant?.id === restaurant.id ? 'bg-black text-[#ff8f66]' : ''} cursor-pointer`}>
                                     <p className="">{restaurant.restaurant_name}</p>
                                 </button>
                             ))}
@@ -332,12 +358,14 @@ export default function Restaurants() {
                                     transition={{
                                         duration: .3
                                     }}
-                                    className="flex flex-col gap-3 text-center [text-shadow:0_4px_4px_rgb(0_0_0_/_0.5)]"
+                                    className="flex flex-col gap-3 text-center [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]"
                                 >
                                     <h2 className="text-xl uppercase">{currentRestaurant?.restaurant_name}</h2>
-                                    <p className={`text-center text-balance text-2xl font-[family-name:var(--font-jura)]`}>{currentRestaurant?.description}</p>
-                                    <span className="text-2xl font-[family-name:var(--font-jura)]">Адрес: {currentRestaurant?.address}</span>
-                                    <span className="text-2xl font-[family-name:var(--font-jura)]">Контакты: {currentRestaurant?.phone_number}</span>
+                                    <p className={`text-center text-balance text-lg leading-relaxed font-(family-name:--font-jura)`}>{currentRestaurant?.description}</p>
+                                    <div className="flex flex-col justify-start border border-white/40 rounded text-lg font-(family-name:--font-jura)">
+                                        <span>Адрес: {currentRestaurant?.address}</span>
+                                        <span>Контакты: {currentRestaurant?.phone_number}</span>
+                                    </div>
                                 </motion.div>
                             </AnimatePresence>
                         </div>
@@ -348,9 +376,9 @@ export default function Restaurants() {
 
                     <FloorCounter prevFloorHandler={prevFloorHandler} nextFloorHandler={nextFloorHandler} currentFloor={currentFloor} maxFloors={maxFloors} y={y} />
 
-                    <p className="text-white text-2xl font-[family-name:var(--font-jura)] [text-shadow:0_4px_4px_rgb(0_0_0_/_0.5)]">Наведите и нажмите, чтобы двигать и масштабировать макет</p>
+                    <p className="text-white text-2xl font-(family-name:--font-jura) [text-shadow:0_4px_4px_rgb(0_0_0/0.5)]">Наведите и нажмите, чтобы двигать и масштабировать макет</p>
 
-                    <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} update={update} currentFloor={currentFloor} changeSelectedSeat={changeSelectedSeat} ChangeSeatState={ChangeSeatState} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} changeIsLoading={changeIsLoading} />
+                    <RestaurantMockUp constraintsRef={constraintsRef} currentRestaurant={currentRestaurant} update={update} currentFloor={currentFloor} seatIsSelected={seatIsSelected} changeSelectedSeat={changeSelectedSeat} ChangeSeatState={ChangeSeatState} isSwitchingFloor={isSwitchingFloor} changeSwithichFloorHandler={changeSwithichFloorHandler} changeIsLoading={changeIsLoading} />
 
                     <button type="submit" className={`cursor-pointer`}>
                         СОХРАНИТЬ

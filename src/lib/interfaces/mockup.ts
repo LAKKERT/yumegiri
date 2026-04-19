@@ -59,8 +59,7 @@ export interface Floors {
     hasMockupUpdate?: boolean;
     mockup_height?: number;
     mockup_width?: number;
-    // places: Seats[];
-    tables: Table[];
+    places: Table[];
 }
 
 export interface Gallery {
