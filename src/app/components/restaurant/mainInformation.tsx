@@ -2,7 +2,7 @@
 
 import { Places } from "@/lib/interfaces/mockup";
 import { MotionValue } from "motion";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { RefObject } from "react";
 import { navigateButton } from "@/lib/variants/restaurant";
