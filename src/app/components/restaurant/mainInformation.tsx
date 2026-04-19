@@ -63,7 +63,7 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
 
                                 animate={{
                                     y: 0,
-                                    opacity: 100,
+                                    opacity: 1,
                                     background: '#000'
                                 }}
                                 transition={{
@@ -75,7 +75,6 @@ export function MainInfo({ prevImageHandler, nextImageHandler, carouselRef, mask
                                     src={image.image}
                                     alt="restaurant gallery"
                                     fill
-                                    objectFit="cover"
                                     className={`rounded-md origin-center`}
                                 >
 
